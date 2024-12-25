@@ -1,12 +1,6 @@
-using JiraApi.Models;
-using JiraApi.Services;
+using ElasticsearchRequest.Models;
+using ApiResponse.Models;
 using Microsoft.AspNetCore.Mvc;
-using Nest;
-using System;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace JiraApi.Controllers
 {
@@ -15,128 +9,512 @@ namespace JiraApi.Controllers
     public class JiraController : ControllerBase
     {
         private readonly ElasticSearchService _elasticSearchService;
-        private readonly HttpClient _httpClient;
 
-        // Constructor that injects the Elasticsearch service and HttpClient
-        public JiraController(ElasticSearchService elasticSearchService, HttpClient httpClient)
+        // Constructor to inject ElasticSearchService
+        public JiraController(ElasticSearchService elasticSearchService)
         {
             _elasticSearchService = elasticSearchService;
-            _httpClient = httpClient;
         }
 
-        // POST api/jira/search_by_id
-        [HttpPost("search_by_id")]
-        public async Task<IActionResult> SearchById([FromBody] SearchByIDRequest request)
+        // POST api/jira/completed_issue_by_id
+        [HttpPost("completed_issue_by_id")]
+        public async Task<IActionResult> CompletedIssueByIdApi([FromBody] SearchByIDRequest request)
         {
-            // Ensure the 'index' and 'id' are provided in the request
+            // Ensure the 'id' is provided in the request
             if (string.IsNullOrEmpty(request.Id))
             {
-                return BadRequest("Id must be provided.");
+                return BadRequest("ID must be provided.");
             }
 
-            // Search query to find the document by its id
-            var response = await _elasticSearchService.Client.SearchAsync<object>(s => s
-                .Index(request.Index) // Use the index provided in the request
-                .Query(q => q
-                    .Term(t => t
-                        .Field("_id") // Search for the document with this ID
-                        .Value(request.Id) // The value of the ID to search for
-                    )
-                )
-            );
+            var query = $@"
+            {{
+                ""query"": {{
+                    ""bool"": {{
+                        ""filter"": [
+                            {{
+                                ""term"": {{
+                                    ""_id"": ""{request.Id}""
+                                }}
+                            }}
+                        ]
+                    }}
+                }}
+            }}";
 
-            // Check if the response was successful
-            if (!response.IsValid || response.Documents.Count == 0)
+            try
             {
-                return NotFound("No document found with the given ID.");
-            }
+                // Execute Elasticsearch query
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
 
-            // Return the found document(s)
-            return Ok(response.Documents);
+                // Return the result
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-        [HttpPost("search_by_user_and_date")]
-        public async Task<IActionResult> SearchByUserAndDate([FromBody] SearchByUserDateRequest request)
+
+        // POST api/jira/completed_and_breached
+        [HttpPost("completed_and_breached")]
+        public async Task<IActionResult> CompletedAndBreachedApi([FromBody] SearchByUserDateRequest request)
         {
             // Ensure the 'user_name' and 'date' are provided in the request
-            if (string.IsNullOrEmpty(request.userName) || string.IsNullOrEmpty(request.date))
+            if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
             {
                 return BadRequest("UserName and Date must be provided.");
             }
 
-            Console.WriteLine(request.userName);
-            Console.WriteLine(request.date);
-            Console.WriteLine(request.index);
+            Console.WriteLine(request.UserName);
+            Console.WriteLine(request.Date);
+            Console.WriteLine(request.Index);
 
-            var query = new
+            var query = $@"
+            {{
+            ""query"": {{
+                ""bool"": {{
+                    ""filter"": [
+                        {{
+                            ""bool"": {{
+                                ""should"": [
+                                    {{ ""term"": {{ ""LEVEL_2_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                    {{ ""term"": {{ ""LEVEL_3_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                    {{ ""term"": {{ ""LEVEL_4_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                    {{ ""term"": {{ ""LEVEL_5_ASSIGNEE.keyword"": ""{request.UserName}"" }} }}
+                                ],
+                                ""minimum_should_match"": 1
+                            }}
+                        }},
+                        {{
+                            ""range"": {{
+                                ""TIMESTAMP"": {{
+                                    ""gte"": ""{request.Date}"",
+                                    ""lte"": ""now/M""
+                                }}
+                            }}
+                        }}
+                    ]
+                }}
+            }},
+            ""aggs"": {{
+                ""monthly_data"": {{
+                    ""date_histogram"": {{
+                        ""field"": ""TIMESTAMP"",
+                        ""calendar_interval"": ""month"",
+                        ""format"": ""yyyy-MM""
+                    }},
+                    ""aggs"": {{
+                        ""completed_issues_count"": {{
+                            ""value_count"": {{
+                                ""field"": ""TIMESTAMP""
+                            }}
+                        }},
+                        ""breach_issues_count"": {{
+                            ""filters"": {{
+                                ""filters"": {{
+                                    ""level_2_breach"": {{
+                                        ""bool"": {{
+                                            ""must"": [
+                                                {{ ""term"": {{ ""LEVEL_2_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                {{ ""term"": {{ ""L2_WORKING_ONGOINGCYCLE_BREACHED"": true }} }}
+                                            ]
+                                        }}
+                                    }},
+                                    ""level_3_breach"": {{
+                                        ""bool"": {{
+                                            ""must"": [
+                                                {{ ""term"": {{ ""LEVEL_3_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                {{ ""term"": {{ ""L3_WORKING_ONGOINGCYCLE_BREACHED"": true }} }}
+                                            ]
+                                        }}
+                                    }},
+                                    ""level_4_breach"": {{
+                                        ""bool"": {{
+                                            ""must"": [
+                                                {{ ""term"": {{ ""LEVEL_4_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                {{ ""term"": {{ ""L4_WORKING_ONGOINGCYCLE_BREACHED"": true }} }}
+                                            ]
+                                        }}
+                                    }},
+                                    ""level_5_breach"": {{
+                                        ""bool"": {{
+                                            ""must"": [
+                                                {{ ""term"": {{ ""LEVEL_5_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                {{ ""term"": {{ ""L5_DEVOPS_QA_WORKING_ONGOINGCYCLE_BREACHED"": true }} }}
+                                            ]
+                                        }}
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }}
+                }}
+            }},
+            ""size"": 0
+            }}";
+
+            // Execute Elasticsearch query
+            var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
+            
+            // Initialize the result list
+            var monthlyDataList = new List<CompletedAndBreachedApi>();
+
+            // Iterate through the buckets to extract the data
+            if (response.TryGetProperty("aggregations", out var aggregations))
             {
-                query = new
+                var monthlyDataBuckets = aggregations.GetProperty("monthly_data").GetProperty("buckets");
+
+                foreach (var bucket in monthlyDataBuckets.EnumerateArray())
                 {
-                    @bool = new
+                    var month = bucket.GetProperty("key_as_string").GetString();
+                    var completedIssuesCount = bucket.GetProperty("completed_issues_count").GetProperty("value").GetInt32();
+
+                    var breachIssuesCount = 0;
+                    if (bucket.GetProperty("breach_issues_count").TryGetProperty("buckets", out var breachBuckets))
                     {
-                        filter = new object[]
-                        {
-                            new
-                            {
-                                @bool = new
-                                {
-                                    should = new object[]
-                                    {
-                                        new { term = new { LEVEL_2_ASSIGNEE_keyword = request.userName } },
-                                        new { term = new { LEVEL_3_ASSIGNEE_keyword = request.userName } },
-                                        new { term = new { LEVEL_4_ASSIGNEE_keyword = request.userName } },
-                                        new { term = new { LEVEL_5_ASSIGNEE_keyword = request.userName } }
-                                    },
-                                    minimum_should_match = 1
-                                }
-                            },
-                            new
-                            {
-                                range = new
-                                {
-                                    TIMESTAMP = new
-                                    {
-                                        gte = request.date
-                                    }
-                                }
-                            }
-                        }
+                        // Sum up breaches from all levels (level_2_breach, level_3_breach, level_4_breach, level_5_breach)
+                        breachIssuesCount = breachBuckets
+                            .EnumerateObject()
+                            .Sum(breach => breach.Value.GetProperty("doc_count").GetInt32());
                     }
+
+                    monthlyDataList.Add(new CompletedAndBreachedApi
+                    {
+                        Month = month,
+                        CompletedIssuesCount = completedIssuesCount,
+                        BreachedIssuesCount = breachIssuesCount
+                    });
                 }
-            };
-
-
-            // Serialize the query to JSON
-            var queryJson = JsonSerializer.Serialize(query);
-
-            // Replace the placeholders in the JSON string
-            queryJson = queryJson.Replace("LEVEL_2_ASSIGNEE_keyword", "LEVEL_2_ASSIGNEE.keyword")
-                                .Replace("LEVEL_3_ASSIGNEE_keyword", "LEVEL_3_ASSIGNEE.keyword")
-                                .Replace("LEVEL_4_ASSIGNEE_keyword", "LEVEL_4_ASSIGNEE.keyword")
-                                .Replace("LEVEL_5_ASSIGNEE_keyword", "LEVEL_5_ASSIGNEE.keyword");
-
-                                
-            Console.WriteLine(queryJson);
-
-            // Elasticsearch endpoint
-            var uri = $"http://localhost:9200/{request.index}/_search";
-
-            // Send the request
-            var httpContent = new StringContent(queryJson, Encoding.UTF8, "application/json");
-            var httpResponse = await _httpClient.PostAsync(uri, httpContent);
-
-            // Process the response
-            if (!httpResponse.IsSuccessStatusCode)
-            {
-                var error = await httpResponse.Content.ReadAsStringAsync();
-                return StatusCode((int)httpResponse.StatusCode, error);
             }
 
-            var responseContent = await httpResponse.Content.ReadAsStringAsync();
+            // Return the extracted data
+            return Ok(monthlyDataList);
+        }
 
-            Console.WriteLine(responseContent);
-            
-            return Ok(JsonSerializer.Deserialize<object>(responseContent));
+        // POST api/jira/breached_and_non_breached
+        [HttpPost("breached_and_non_breached")]
+        public async Task<IActionResult> BreachedAndNonBreachedApi([FromBody] SearchByUserDateRequest request)
+        {
+            // Ensure the 'user_name' and 'date' are provided in the request
+            if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
+            {
+                return BadRequest("UserName and Date must be provided.");
+            }
+
+            Console.WriteLine(request.UserName);
+            Console.WriteLine(request.Date);
+            Console.WriteLine(request.Index);
+
+            var query = $@"
+            {{
+            ""query"": {{
+                ""bool"": {{
+                    ""filter"": [
+                        {{
+                            ""bool"": {{
+                                ""should"": [
+                                    {{ ""term"": {{ ""LEVEL_2_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                    {{ ""term"": {{ ""LEVEL_3_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                    {{ ""term"": {{ ""LEVEL_4_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                    {{ ""term"": {{ ""LEVEL_5_ASSIGNEE.keyword"": ""{request.UserName}"" }} }}
+                                ],
+                                ""minimum_should_match"": 1
+                            }}
+                        }},
+                        {{
+                            ""range"": {{
+                                ""TIMESTAMP"": {{
+                                    ""gte"": ""{request.Date}"",
+                                    ""lte"": ""now/M""
+                                }}
+                            }}
+                        }}
+                    ]
+                }}
+            }},
+            ""aggs"": {{
+                ""issue_counts"": {{
+                    ""filters"": {{
+                        ""filters"": {{
+                            ""breach_issues"": {{
+                                ""bool"": {{
+                                    ""should"": [
+                                        {{
+                                            ""bool"": {{
+                                                ""must"": [
+                                                    {{ ""term"": {{ ""LEVEL_2_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                    {{ ""term"": {{ ""L2_WORKING_ONGOINGCYCLE_BREACHED"": true }} }}
+                                                ]
+                                            }}
+                                        }},
+                                        {{
+                                            ""bool"": {{
+                                                ""must"": [
+                                                    {{ ""term"": {{ ""LEVEL_3_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                    {{ ""term"": {{ ""L3_WORKING_ONGOINGCYCLE_BREACHED"": true }} }}
+                                                ]
+                                            }}
+                                        }},
+                                        {{
+                                            ""bool"": {{
+                                                ""must"": [
+                                                    {{ ""term"": {{ ""LEVEL_4_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                    {{ ""term"": {{ ""L4_WORKING_ONGOINGCYCLE_BREACHED"": true }} }}
+                                                ]
+                                            }}
+                                        }},
+                                        {{
+                                            ""bool"": {{
+                                                ""must"": [
+                                                    {{ ""term"": {{ ""LEVEL_5_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                    {{ ""term"": {{ ""L5_DEVOPS_QA_WORKING_ONGOINGCYCLE_BREACHED"": true }} }}
+                                                ]
+                                            }}
+                                        }}
+                                    ],
+                                    ""minimum_should_match"": 1
+                                }}
+                            }},
+                            ""non_breach_issues"": {{
+                                ""bool"": {{
+                                    ""should"": [
+                                        {{
+                                            ""bool"": {{
+                                                ""must"": [
+                                                    {{ ""term"": {{ ""LEVEL_2_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                    {{ ""term"": {{ ""L2_WORKING_ONGOINGCYCLE_BREACHED"": false }} }}
+                                                ]
+                                            }}
+                                        }},
+                                        {{
+                                            ""bool"": {{
+                                                ""must"": [
+                                                    {{ ""term"": {{ ""LEVEL_3_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                    {{ ""term"": {{ ""L3_WORKING_ONGOINGCYCLE_BREACHED"": false }} }}
+                                                ]
+                                            }}
+                                        }},
+                                        {{
+                                            ""bool"": {{
+                                                ""must"": [
+                                                    {{ ""term"": {{ ""LEVEL_4_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                    {{ ""term"": {{ ""L4_WORKING_ONGOINGCYCLE_BREACHED"": false }} }}
+                                                ]
+                                            }}
+                                        }},
+                                        {{
+                                            ""bool"": {{
+                                                ""must"": [
+                                                    {{ ""term"": {{ ""LEVEL_5_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                    {{ ""term"": {{ ""L5_DEVOPS_QA_WORKING_ONGOINGCYCLE_BREACHED"": false }} }}
+                                                ]
+                                            }}
+                                        }}
+                                    ],
+                                    ""minimum_should_match"": 1
+                                }}
+                            }}
+                        }}
+                    }}
+                }}
+            }},
+            ""size"": 0
+            }}";
+
+            try
+                {
+                // Execute Elasticsearch query
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
+
+                // Safely extract the counts for breached and non-breached issues
+                int breachedCount = 0;
+                int nonBreachCount = 0;
+
+                if (response.TryGetProperty("aggregations", out var aggregations) &&
+                    aggregations.TryGetProperty("issue_counts", out var issueCounts) &&
+                    issueCounts.TryGetProperty("buckets", out var buckets))
+                {
+                    if (buckets.TryGetProperty("breach_issues", out var breachIssues))
+                    {
+                        breachedCount = breachIssues.TryGetProperty("doc_count", out var breachDocCount) 
+                            ? breachDocCount.GetInt32() 
+                            : 0;
+                    }
+
+                    if (buckets.TryGetProperty("non_breach_issues", out var nonBreachIssues))
+                    {
+                        nonBreachCount = nonBreachIssues.TryGetProperty("doc_count", out var nonBreachDocCount) 
+                            ? nonBreachDocCount.GetInt32() 
+                            : 0;
+                    }
+                }
+
+                // Return the formatted result
+                var result = new BreachedAndNonBreachedApiResponse
+                {
+                    TotalIssuesBreachCount = breachedCount,
+                    TotalIssuesNonBreachCount = nonBreachCount
+                };
+
+                return Ok(result);
+            }
+        catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
+        // POST api/jira/completionrate
+        [HttpPost("completionrate")]
+        public async Task<IActionResult> CompletionRateApi([FromBody] SearchByUserDateRequest request)
+        {
+            // Ensure the 'user_name' and 'date' are provided in the request
+            if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
+            {
+                return BadRequest("UserName and Date must be provided.");
+            }
+
+            Console.WriteLine(request.UserName);
+            Console.WriteLine(request.Date);
+            Console.WriteLine(request.Index);
+
+            var query = $@"
+            {{
+                ""size"": 0,
+                ""query"": {{
+                    ""bool"": {{
+                        ""filter"": [
+                            {{
+                                ""bool"": {{
+                                    ""should"": [
+                                        {{ ""term"": {{ ""LEVEL_2_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                        {{ ""term"": {{ ""LEVEL_3_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                        {{ ""term"": {{ ""LEVEL_4_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                        {{ ""term"": {{ ""LEVEL_5_ASSIGNEE.keyword"": ""{request.UserName}"" }} }}
+                                    ],
+                                    ""minimum_should_match"": 1
+                                }}
+                            }},
+                            {{
+                                ""range"": {{
+                                    ""TIMESTAMP"": {{
+                                        ""gte"": ""{request.Date}"",
+                                        ""lte"": ""now/M""
+                                    }}
+                                }}
+                            }}
+                        ]
+                    }}
+                }},
+                ""aggs"": {{
+                    ""monthly_data"": {{
+                        ""date_histogram"": {{
+                            ""field"": ""TIMESTAMP"",
+                            ""calendar_interval"": ""month"",
+                            ""format"": ""yyyy-MM""
+                        }},
+                        ""aggs"": {{
+                            ""total_issues_non_breach"": {{
+                                ""filters"": {{
+                                    ""filters"": {{
+                                        ""non_breach_issues"": {{
+                                            ""bool"": {{
+                                                ""should"": [
+                                                    {{
+                                                        ""bool"": {{
+                                                            ""must"": [
+                                                                {{ ""term"": {{ ""LEVEL_2_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                                {{ ""term"": {{ ""L2_WORKING_ONGOINGCYCLE_BREACHED"": false }} }}
+                                                            ]
+                                                        }}
+                                                    }},
+                                                    {{
+                                                        ""bool"": {{
+                                                            ""must"": [
+                                                                {{ ""term"": {{ ""LEVEL_3_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                                {{ ""term"": {{ ""L3_WORKING_ONGOINGCYCLE_BREACHED"": false }} }}
+                                                            ]
+                                                        }}
+                                                    }},
+                                                    {{
+                                                        ""bool"": {{
+                                                            ""must"": [
+                                                                {{ ""term"": {{ ""LEVEL_4_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                                {{ ""term"": {{ ""L4_WORKING_ONGOINGCYCLE_BREACHED"": false }} }}
+                                                            ]
+                                                        }}
+                                                    }},
+                                                    {{
+                                                        ""bool"": {{
+                                                            ""must"": [
+                                                                {{ ""term"": {{ ""LEVEL_5_ASSIGNEE.keyword"": ""{request.UserName}"" }} }},
+                                                                {{ ""term"": {{ ""L5_DEVOPS_QA_WORKING_ONGOINGCYCLE_BREACHED"": false }} }}
+                                                            ]
+                                                        }}
+                                                    }}
+                                                ],
+                                                ""minimum_should_match"": 1
+                                            }}
+                                        }}
+                                    }}
+                                }}
+                            }},
+                            ""total_issues_completed"": {{
+                                ""value_count"": {{
+                                    ""field"": ""TIMESTAMP""
+                                }}
+                            }},
+                            ""completion_rate"": {{
+                                ""bucket_script"": {{
+                                    ""buckets_path"": {{
+                                        ""non_breach"": ""total_issues_non_breach['non_breach_issues']._count"",
+                                        ""completed"": ""total_issues_completed""
+                                    }},
+                                    ""script"": ""params.completed > 0 ? (params.non_breach / params.completed) * 100 : 0""
+                                }}
+                            }}
+                        }}
+                    }}
+                }}
+            }}";
+
+            try
+            {
+                // Execute Elasticsearch query
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
+
+                Console.WriteLine(response);
+
+                var monthlyData = response
+                .GetProperty("aggregations")
+                .GetProperty("monthly_data")
+                .GetProperty("buckets")
+                .EnumerateArray()
+                .Select(bucket => new CompletionRateApiResponse
+                {
+                    Month = bucket.GetProperty("key_as_string").GetString(),
+                    TotalIssuesNonBreachCount = bucket.GetProperty("total_issues_non_breach")
+                        .GetProperty("buckets")
+                        .GetProperty("non_breach_issues")
+                        .GetProperty("doc_count").GetInt32(),
+                    TotalIssuesCompleted = bucket.GetProperty("total_issues_completed")
+                        .GetProperty("value").GetInt32(),
+                    CompletionRate = bucket.TryGetProperty("completion_rate", out var rateProperty)
+                        ? rateProperty.GetProperty("value").GetDouble()
+                        : 0.0,  // Default to 0.0 if completion_rate is missing
+                })
+                .ToList();
+
+
+                // Return the formatted monthly data
+                return Ok(monthlyData);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
     }
 }
