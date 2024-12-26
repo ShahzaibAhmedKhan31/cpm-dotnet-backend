@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
-using JiraApi.Services;
+// using JiraApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
