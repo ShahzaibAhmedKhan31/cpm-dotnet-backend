@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
-
-public class SearchResponse
+namespace TaskCompletionResponse.Models
+{
+public class TaskCompletionResponse
 {
     public int Took { get; set; }
     public bool TimedOut { get; set; }
@@ -46,21 +47,26 @@ public class MonthBucket
     [JsonProperty("key_as_string")]
     public string Date { get; set; }
 
-    // [JsonProperty("key")]
-    // public long Key { get; set; }
+    [JsonProperty("tasks_assigned")]
+    public DocCountAggregation TasksAssigned { get; set; }
 
-    // [JsonProperty("doc_count")]
-    // public int DocCount { get; set; }
+    [JsonProperty("tasks_completed")]
+    public DocCountAggregation TasksCompleted { get; set; }
 
-    [JsonProperty("bugs_assigned")]
-    public DocCountAggregation BugsAssigned { get; set; }
-
-    [JsonProperty("bugs_completed")]
-    public DocCountAggregation BugsCompleted { get; set; }
+    [JsonProperty("completion_rate")]
+    public CompletionRate CompletionRate { get; set; }
 }
 
 public class DocCountAggregation
 {
     [JsonProperty("doc_count")]
     public int DocCount { get; set; }
+}
+
+public class CompletionRate
+{
+    [JsonProperty("value")]
+    public double Value { get; set; }
+}
+
 }
