@@ -7,6 +7,17 @@ using Microsoft.Identity.Web.UI;
 // using JiraApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+// Add CORS support for your frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // Frontend URL (Next.js running here)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Allow cookies to be sent if using authentication
+    });
+});
 
 // Add services to the container before building the app
 
@@ -38,6 +49,9 @@ builder.Services.AddControllersWithViews()
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
+// Use CORS Policy
+app.UseCors("AllowSpecificOrigins");
+
 
 
 
