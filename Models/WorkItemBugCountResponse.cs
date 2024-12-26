@@ -11,13 +11,13 @@ public class WorkItemBugCountResponse
     public bool TimedOut { get; set; }
 
     [JsonProperty("_shards")]
-    public ShardsInfo Shards { get; set; }
+    public ShardsInfo? Shards { get; set; }
 
     [JsonProperty("hits")]
-    public HitsInfo Hits { get; set; }
+    public HitsInfo? Hits { get; set; }
 
     [JsonProperty("aggregations")]
-    public Aggregations Aggregations { get; set; }
+    public Aggregations? Aggregations { get; set; }
 }
 
 public class ShardsInfo
@@ -41,10 +41,10 @@ public class HitsInfo
     public TotalHits Total { get; set; }
 
     [JsonProperty("max_score")]
-    public object MaxScore { get; set; } // Replace with actual type if known
+    public object? MaxScore { get; set; } // Replace with actual type if known
 
     [JsonProperty("hits")]
-    public List<object> Hits { get; set; } // Replace with actual type if known
+    public List<object>? Hits { get; set; } // Replace with actual type if known
 }
 
 public class TotalHits
@@ -53,13 +53,13 @@ public class TotalHits
     public int Value { get; set; }
 
     [JsonProperty("relation")]
-    public string Relation { get; set; }
+    public string? Relation { get; set; }
 }
 
 public class Aggregations
 {
     [JsonProperty("workitem_bugs_count")]
-    public WorkitemBugsCount WorkitemBugsCount { get; set; }
+    public WorkitemBugsCount? WorkitemBugsCount { get; set; }
 }
 
 public class WorkitemBugsCount
@@ -71,7 +71,7 @@ public class WorkitemBugsCount
     public int SumOtherDocCount { get; set; }
 
     [JsonProperty("buckets")]
-    public List<BugBucket> Buckets { get; set; }
+    public List<BugBucket>? Buckets { get; set; }
 }
 
 public class BugBucket
@@ -83,7 +83,7 @@ public class BugBucket
     public int DocCount { get; set; }
 
     [JsonProperty("bugs")]
-    public BugDetails Bugs { get; set; }
+    public BugDetails? Bugs { get; set; }
 }
 
 public class BugDetails
@@ -92,45 +92,45 @@ public class BugDetails
     public int DocCount { get; set; }
 
     [JsonProperty("parent_assignee")]
-    public ParentAssignee ParentAssignee { get; set; }
+    public ParentAssignee? ParentAssignee { get; set; }
 }
 
 public class ParentAssignee
 {
     [JsonProperty("hits")]
-    public ParentAssigneeHits Hits { get; set; }
+    public ParentAssigneeHits? Hits { get; set; }
 }
 
 public class ParentAssigneeHits
 {
     [JsonProperty("total")]
-    public TotalHits Total { get; set; }
+    public TotalHits? Total { get; set; }
 
     [JsonProperty("max_score")]
     public double MaxScore { get; set; }
 
     [JsonProperty("hits")]
-    public List<ParentAssigneeHit> Hits { get; set; }
+    public List<ParentAssigneeHit>? Hits { get; set; }
 }
 
 public class ParentAssigneeHit
 {
     [JsonProperty("_index")]
-    public string Index { get; set; }
+    public string? Index { get; set; }
 
     [JsonProperty("_id")]
-    public string Id { get; set; }
+    public string? Id { get; set; }
 
     [JsonProperty("_score")]
     public double Score { get; set; }
 
     [JsonProperty("_source")]
-    public ParentAssigneeSource Source { get; set; }
+    public ParentAssigneeSource? Source { get; set; }
 }
 
 public class ParentAssigneeSource
 {
     [JsonProperty("PARENT_ASSIGNEE")]
-    public string ParentAssignee { get; set; }
+    public string? ParentAssignee { get; set; }
 }
 }

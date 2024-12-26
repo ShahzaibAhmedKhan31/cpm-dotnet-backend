@@ -1,4 +1,4 @@
-using ElasticsearchRequest.Models;
+using ApiRequest.Models;
 using ApiResponse.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,6 +44,11 @@ namespace JiraApi.Controllers
             try
             {
                 // Execute Elasticsearch query
+                if (string.IsNullOrEmpty(request.Index))
+                {
+                    return BadRequest("Index must be provided.");
+                }
+
                 var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
 
                 // Return the result
@@ -153,6 +158,12 @@ namespace JiraApi.Controllers
             }},
             ""size"": 0
             }}";
+
+            // Execute Elasticsearch query
+                if (string.IsNullOrEmpty(request.Index))
+                {
+                    return BadRequest("Index must be provided.");
+                }
 
             // Execute Elasticsearch query
             var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
@@ -324,6 +335,13 @@ namespace JiraApi.Controllers
 
             try
                 {
+                
+                // Execute Elasticsearch query
+                if (string.IsNullOrEmpty(request.Index))
+                {
+                    return BadRequest("Index must be provided.");
+                }
+
                 // Execute Elasticsearch query
                 var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
 
@@ -482,6 +500,12 @@ namespace JiraApi.Controllers
 
             try
             {
+                // Execute Elasticsearch query
+                if (string.IsNullOrEmpty(request.Index))
+                {
+                    return BadRequest("Index must be provided.");
+                }
+                
                 // Execute Elasticsearch query
                 var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
 

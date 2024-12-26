@@ -5,6 +5,7 @@ using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using ApiRequest.Models;
 
 namespace TfsApi.Controllers
 {
@@ -21,7 +22,7 @@ namespace TfsApi.Controllers
 
         [HttpPost]
         [Route("bugs_count")]
-        public async Task<IActionResult> BugsCount([FromBody] SearchRequest request)
+        public async Task<IActionResult> BugsCountApi([FromBody] SearchRequest request)
         {
             // Construct the query as a JSON string
             string query = $@"
