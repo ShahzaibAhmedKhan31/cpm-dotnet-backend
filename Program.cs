@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+// using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.Identity.Web;
+// using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
-
+// using Microsoft.Extensions.DependencyInjection;
+// using Microsoft.Extensions.Hosting;
+// using Microsoft.Extensions.Options;
 // using JiraApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,7 +30,24 @@ builder.Services.AddSwaggerGen();
 
 // Add Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme) // Cookie Authentication
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        options.Events = new CookieAuthenticationEvents
+        {
+            // Handle redirect to login by returning 401 Unauthorized
+            OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            },
+            // Handle redirect to access denied by returning 403 Forbidden
+            OnRedirectToAccessDenied = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            }
+        };
+    })
     .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
     {
         options.Authority = $"{builder.Configuration["AzureAd:Instance"]}{builder.Configuration["AzureAd:TenantId"]}";
@@ -37,9 +56,21 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.CallbackPath = builder.Configuration["AzureAd:CallbackPath"];
         options.SaveTokens = true; // Save tokens in HttpContext for access later
         options.ResponseType = "code"; // Use Authorization Code Flow
+
+        // Optional: Customize OpenIdConnect events for advanced scenarios
+        options.Events = new OpenIdConnectEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.HandleResponse(); // Prevent default redirect behavior
+                return context.Response.WriteAsync("Authentication Failed");
+            }
+        };
     });
 
 // Register the ElasticSearchService
+builder.Services.Configure<ElasticsearchSettings>(builder.Configuration.GetSection("ElasticsearchSettings"));
 builder.Services.AddSingleton<ElasticSearchService>();
 
 builder.Services.AddAuthorization();
@@ -70,5 +101,21 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapGet("/search", async (ElasticSearchService elasticSearchService) =>
+{
+    var query = "{ \"query\": { \"match_all\": {} } }";
+    var index = "my-index";
+
+    try
+    {
+        var result = await elasticSearchService.ExecuteElasticsearchQueryAsync(query, index);
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
 
 app.Run();

@@ -1,11 +1,13 @@
-using ElasticsearchRequest.Models;
+using ApiRequest.Models;
 using ApiResponse.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PullRequest.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class PullRequestController : ControllerBase
     {
 
@@ -65,7 +67,13 @@ namespace PullRequest.Controllers
             }}";
 
             try
-            {
+            {   
+                // Execute Elasticsearch query
+                if (string.IsNullOrEmpty(request.Index))
+                {
+                    return BadRequest("Index must be provided.");
+                }
+
                 // Execute Elasticsearch query
                 var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
 
@@ -129,6 +137,13 @@ namespace PullRequest.Controllers
 
             try
             {
+
+                // Execute Elasticsearch query
+                if (string.IsNullOrEmpty(request.Index))
+                {
+                    return BadRequest("Index must be provided.");
+                }
+
                 // Execute Elasticsearch query
                 var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
 
@@ -202,6 +217,12 @@ namespace PullRequest.Controllers
             try
             {
                 // Execute Elasticsearch query
+                if (string.IsNullOrEmpty(request.Index))
+                {
+                    return BadRequest("Index must be provided.");
+                }
+                
+                // Execute Elasticsearch query
                 var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
 
                 // Parse the response to extract the pr_count by month
@@ -210,7 +231,7 @@ namespace PullRequest.Controllers
                     .GetProperty("reviewed_pr_count_by_month")
                     .GetProperty("buckets")
                     .EnumerateArray()
-                    .Select(bucket => new GetReviewedPrCountApi
+                    .Select(bucket => new GetReviewedPrCountApiResponse
                     {
                         Month = bucket.GetProperty("key_as_string").GetString(),
                         PrReviewCount = bucket.GetProperty("doc_count").GetInt32()
