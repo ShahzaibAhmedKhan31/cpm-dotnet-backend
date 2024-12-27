@@ -37,10 +37,11 @@ namespace ApiResponse.Models
         public int PrCommentsCount { get; set; }
     }
 
-    public class GetReviewedPrCountApi
+    public class GetReviewedPrCountApiResponse
     {
         public string? Month { get; set; }
 
         public int PrReviewCount { get; set; }
     }
+
 }

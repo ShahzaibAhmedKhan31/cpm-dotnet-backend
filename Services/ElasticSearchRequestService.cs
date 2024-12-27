@@ -1,21 +1,26 @@
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 
 
 public class ElasticSearchService
 {
     private readonly HttpClient _httpClient;
+    private readonly string _elasticsearchUrl;
 
     // Inject HttpClient via constructor
-    public ElasticSearchService(HttpClient httpClient)
+    public ElasticSearchService(HttpClient httpClient, IOptions<ElasticsearchSettings> settings)
     {
         _httpClient = httpClient;
+        _elasticsearchUrl = settings.Value.Url;
+        Console.WriteLine($"Elasticsearch URL: {_elasticsearchUrl}"); // Log or debug the URL
+
     }
 
     // Your logic for interacting with Elasticsearch
     public async Task<JsonElement> ExecuteElasticsearchQueryAsync(string query, string index)
     {
-        var uri = $"http://172.174.172.29:9200/{index}/_search";
+        var uri = $"{_elasticsearchUrl}/{index}/_search/elasticsearch";
         var httpContent = new StringContent(query, Encoding.UTF8, "application/json");
 
         var httpResponse = await _httpClient.PostAsync(uri, httpContent);
