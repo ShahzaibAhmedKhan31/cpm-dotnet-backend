@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
-
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 // using JiraApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,5 +60,21 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapGet("/search", async (ElasticSearchService elasticSearchService) =>
+{
+    var query = "{ \"query\": { \"match_all\": {} } }";
+    var index = "my-index";
+
+    try
+    {
+        var result = await elasticSearchService.ExecuteElasticsearchQueryAsync(query, index);
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
 
 app.Run();

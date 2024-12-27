@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 
 
 public class ElasticSearchService
@@ -15,7 +16,7 @@ public class ElasticSearchService
     // Your logic for interacting with Elasticsearch
     public async Task<JsonElement> ExecuteElasticsearchQueryAsync(string query, string index)
     {
-        var uri = $"http://172.174.172.29:9200/{index}/_search";
+        var uri = $"{_elasticsearchUrl}/{index}/_search";
         var httpContent = new StringContent(query, Encoding.UTF8, "application/json");
 
         var httpResponse = await _httpClient.PostAsync(uri, httpContent);
