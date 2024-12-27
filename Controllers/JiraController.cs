@@ -7,6 +7,7 @@ namespace JiraApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class JiraController : ControllerBase
     {
         private readonly ElasticSearchService _elasticSearchService;
