@@ -62,11 +62,15 @@ namespace WebApplication1.Controllers
                 Response.Cookies.Delete(cookie);
             }
 
-            // Sign out from authentication schemes
-            return SignOut(new AuthenticationProperties
-            {
-                RedirectUri = "http://localhost:3000/auth/login" // Redirect to home page or another specified URL after logout
-            }, CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme);
+            // // Sign out from authentication schemes
+            // return SignOut(new AuthenticationProperties
+            // {
+            //     RedirectUri = "http://localhost:3000/auth/login" // Redirect to home page or another specified URL after logout
+            // }, CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme);
+            
+                SignOut(CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme);
+                return Ok(new { Message = "Logged out successfully" });
+
         }
 
 
