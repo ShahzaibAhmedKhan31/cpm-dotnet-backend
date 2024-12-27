@@ -46,7 +46,7 @@ namespace WebApplication1.Controllers
             Console.WriteLine("Access Token: " + token);
             return Challenge(new AuthenticationProperties
             {
-                RedirectUri = "http://localhost:3000/newdash" // Redirect to React app after login
+                RedirectUri = "http://localhost:3000/dashboard" // Redirect to React app after login
             }, OpenIdConnectDefaults.AuthenticationScheme); // Use the correct scheme
         }
 
