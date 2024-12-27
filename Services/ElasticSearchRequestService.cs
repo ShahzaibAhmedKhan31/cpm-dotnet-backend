@@ -6,11 +6,15 @@ using Microsoft.Extensions.Options;
 public class ElasticSearchService
 {
     private readonly HttpClient _httpClient;
+    private readonly string _elasticsearchUrl;
 
     // Inject HttpClient via constructor
     public ElasticSearchService(HttpClient httpClient)
     {
         _httpClient = httpClient;
+        _elasticsearchUrl = settings.Value.Url;
+        Console.WriteLine($"Elasticsearch URL: {_elasticsearchUrl}"); // Log or debug the URL
+
     }
 
     // Your logic for interacting with Elasticsearch

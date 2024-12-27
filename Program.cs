@@ -31,6 +31,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 // Register the ElasticSearchService
+builder.Services.Configure<ElasticsearchSettings>(builder.Configuration.GetSection("ElasticsearchSettings"));
 builder.Services.AddSingleton<ElasticSearchService>();
 
 builder.Services.AddAuthorization();
