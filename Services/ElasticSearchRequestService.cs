@@ -9,7 +9,7 @@ public class ElasticSearchService
     private readonly string _elasticsearchUrl;
 
     // Inject HttpClient via constructor
-    public ElasticSearchService(HttpClient httpClient)
+    public ElasticSearchService(HttpClient httpClient, IOptions<ElasticsearchSettings> settings)
     {
         _httpClient = httpClient;
         _elasticsearchUrl = settings.Value.Url;
