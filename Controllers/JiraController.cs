@@ -1,6 +1,7 @@
 using ElasticsearchRequest.Models;
 using ApiResponse.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JiraApi.Controllers
 {
@@ -18,6 +19,7 @@ namespace JiraApi.Controllers
 
         // POST api/jira/completed_issue_by_id
         [HttpPost("completed_issue_by_id")]
+        [Authorize]
         public async Task<IActionResult> CompletedIssueByIdApi([FromBody] SearchByIDRequest request)
         {
             // Ensure the 'id' is provided in the request
@@ -58,6 +60,7 @@ namespace JiraApi.Controllers
 
         // POST api/jira/completed_and_breached
         [HttpPost("completed_and_breached")]
+        [Authorize]
         public async Task<IActionResult> CompletedAndBreachedApi([FromBody] SearchByUserDateRequest request)
         {
             // Ensure the 'user_name' and 'date' are provided in the request
@@ -194,6 +197,7 @@ namespace JiraApi.Controllers
 
         // POST api/jira/breached_and_non_breached
         [HttpPost("breached_and_non_breached")]
+        [Authorize]
         public async Task<IActionResult> BreachedAndNonBreachedApi([FromBody] SearchByUserDateRequest request)
         {
             // Ensure the 'user_name' and 'date' are provided in the request
@@ -368,6 +372,7 @@ namespace JiraApi.Controllers
 
         // POST api/jira/completionrate
         [HttpPost("completionrate")]
+        [Authorize]
         public async Task<IActionResult> CompletionRateApi([FromBody] SearchByUserDateRequest request)
         {
             // Ensure the 'user_name' and 'date' are provided in the request
