@@ -6,11 +6,13 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using ApiRequest.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TfsApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class TfsController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClientFactory;

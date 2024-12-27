@@ -1,11 +1,13 @@
 using ApiRequest.Models;
 using ApiResponse.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JiraApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class JiraController : ControllerBase
     {
         private readonly ElasticSearchService _elasticSearchService;

@@ -1,11 +1,13 @@
 using ApiRequest.Models;
 using ApiResponse.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PullRequest.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class PullRequestController : ControllerBase
     {
 
