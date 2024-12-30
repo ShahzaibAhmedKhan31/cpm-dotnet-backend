@@ -34,5 +34,6 @@ public class ElasticSearchService
         var responseContent = await httpResponse.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<JsonElement>(responseContent);
     }
+
 }
 

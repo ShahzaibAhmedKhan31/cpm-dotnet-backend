@@ -53,11 +53,22 @@ namespace WebApplication1.Controllers
         [HttpGet("logout")]
         public IActionResult Logout()
         {
+            // Clear the session
+            HttpContext.Session.Clear();
+
+            // Clear all cookies
+            foreach (var cookie in Request.Cookies.Keys)
+            {
+                Response.Cookies.Delete(cookie);
+            }
+
+            // Sign out from authentication schemes
             return SignOut(new AuthenticationProperties
             {
-                RedirectUri = "/"
+                RedirectUri = "/" // Redirect to home page or another specified URL after logout
             }, CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme);
         }
+
 
         [HttpGet("user")]
             public IActionResult GetUser()

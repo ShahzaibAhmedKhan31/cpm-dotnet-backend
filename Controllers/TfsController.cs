@@ -16,10 +16,12 @@ namespace TfsApi.Controllers
     public class TfsController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ElasticSearchService _elasticSearchService;
 
-        public TfsController(IHttpClientFactory httpClientFactory)
+        public TfsController(IHttpClientFactory httpClientFactory, ElasticSearchService elasticSearchService)
         {
             _httpClientFactory = httpClientFactory;
+             _elasticSearchService = elasticSearchService;
         }
 
         [HttpPost]
@@ -111,26 +113,40 @@ namespace TfsApi.Controllers
                 }}
             }}";
 
-            // Serialize the JSON string into HttpContent
-            var content = new StringContent(query, Encoding.UTF8, "application/json");
 
-            // Make HTTP request to Elasticsearch
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PostAsync("http://172.174.172.29:9200/tfs_index/_search?pretty", content);
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                // Log the response body for debugging
-                var resp = await response.Content.ReadAsStringAsync();
-                return BadRequest($"Error querying Elasticsearch. Response: {resp}");
+
+                // Use the service to execute the Elasticsearch query
+                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+
+                // Parse the response to access "aggregations" -> "months" -> "buckets"
+                var aggregations = searchResponse.GetProperty("aggregations");
+                var months = aggregations.GetProperty("months");
+                var buckets = months.GetProperty("buckets");
+                
+                // Use the service to execute the Elasticsearch query
+                var result = buckets.EnumerateArray().Select(bucket => new
+                {
+                    date = bucket.GetProperty("key_as_string").GetString(),
+                    bugsAssigned = new
+                    {
+                        docCount = bucket.GetProperty("bugs_assigned").GetProperty("doc_count").GetInt32()
+                    },
+                    bugsCompleted = new
+                    {
+                        docCount = bucket.GetProperty("bugs_completed").GetProperty("doc_count").GetInt32()
+                    }
+                });
+
+                // Return the processed buckets
+                return Ok(result);
             }
-
-            var responseBody = await response.Content.ReadAsStringAsync();
-            var searchResponse = JsonConvert.DeserializeObject<SearchResponse>(responseBody);
-
-            // Return Elasticsearch response
-            var buckets = searchResponse.Aggregations?.Months?.Buckets;
-            return Ok(buckets);
+            catch (Exception ex)
+            {
+                // Handle exceptions from the service
+                return BadRequest($"Error querying Elasticsearch: {ex.Message}");
+            }
         }
 
 
@@ -226,25 +242,45 @@ namespace TfsApi.Controllers
 
 
             // Serialize the JSON string into HttpContent
-            var content = new StringContent(query, Encoding.UTF8, "application/json");
+            // var content = new StringContent(query, Encoding.UTF8, "application/json");
 
-            // Make HTTP request to Elasticsearch
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PostAsync("http://172.174.172.29:9200/tfs_index/_search?pretty", content);
-
-            if (!response.IsSuccessStatusCode)
+            // // Make HTTP request to Elasticsearch
+            try
             {
-                // Log the response body for debugging
-                var resp = await response.Content.ReadAsStringAsync();
-                return BadRequest($"Error querying Elasticsearch. Response: {resp}");
+
+                // Use the service to execute the Elasticsearch query
+                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+
+                // Parse the response to access "aggregations" -> "months" -> "buckets"
+                var aggregations = searchResponse.GetProperty("aggregations");
+                var months = aggregations.GetProperty("months");
+                var buckets = months.GetProperty("buckets");
+                
+                // Use the service to execute the Elasticsearch query
+                var result = buckets.EnumerateArray().Select(bucket => new
+                {
+                    date = bucket.GetProperty("key_as_string").GetString(),
+                    tasksAssigned = new
+                    {
+                        docCount = bucket.GetProperty("tasks_assigned").GetProperty("doc_count").GetInt32()
+                    },
+                    tasksCompleted = new
+                    {
+                        docCount = bucket.GetProperty("tasks_completed").GetProperty("doc_count").GetInt32()
+                    }
+                });
+
+                // Return the processed buckets
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions from the service
+                return BadRequest($"Error querying Elasticsearch: {ex.Message}");
             }
 
-            var responseBody = await response.Content.ReadAsStringAsync();
-            var searchResponse = JsonConvert.DeserializeObject<TaskResponse.Models.TaskResponse>(responseBody);
 
-            // Return Elasticsearch response
-            var buckets = searchResponse.Aggregations?.Months?.Buckets;
-            return Ok(buckets);
+
         }
 
         [HttpPost]
@@ -347,26 +383,42 @@ namespace TfsApi.Controllers
             }}";
 
 
-            // Serialize the JSON string into HttpContent
-            var content = new StringContent(query, Encoding.UTF8, "application/json");
-
-            // Make HTTP request to Elasticsearch
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PostAsync("http://172.174.172.29:9200/tfs_index/_search?pretty", content);
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                // Log the response body for debugging
-                var resp = await response.Content.ReadAsStringAsync();
-                return BadRequest($"Error querying Elasticsearch. Response: {resp}");
+                // Use the service to execute the Elasticsearch query
+                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+
+                // Process the response (example: accessing aggregations and buckets)
+                var aggregations = searchResponse.GetProperty("aggregations");
+                var months = aggregations.GetProperty("months");
+                var buckets = months.GetProperty("buckets");
+
+                // Transform the buckets into the desired format
+                var result = buckets.EnumerateArray().Select(bucket => new
+                {
+                    date = bucket.GetProperty("key_as_string").GetString(),
+                    tasksAssigned = new
+                    {
+                        docCount = bucket.GetProperty("tasks_assigned").GetProperty("doc_count").GetInt32()
+                    },
+                    tasksCompleted = new
+                    {
+                        docCount = bucket.GetProperty("tasks_completed").GetProperty("doc_count").GetInt32()
+                    },
+                    completionRate = new
+                    {
+                        value = bucket.GetProperty("completion_rate").GetProperty("value").GetDouble()
+                    }
+                });
+
+                // Return the transformed result
+                return Ok(result);
             }
-
-            var responseBody = await response.Content.ReadAsStringAsync();
-            var searchResponse = JsonConvert.DeserializeObject<TaskCompletionResponse.Models.TaskCompletionResponse>(responseBody);
-
-            // Return Elasticsearch response
-            var buckets = searchResponse.Aggregations?.Months?.Buckets;
-            return Ok(buckets);
+            catch (Exception ex)
+            {
+                // Handle exceptions from the service
+                return BadRequest($"Error querying Elasticsearch: {ex.Message}");
+            }
         }
 
         [HttpPost]
@@ -431,39 +483,31 @@ namespace TfsApi.Controllers
                 }}
             }}";
 
-
-
-            // Serialize the JSON string into HttpContent
-            var content = new StringContent(query, Encoding.UTF8, "application/json");
-
-            // Make HTTP request to Elasticsearch
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PostAsync("http://172.174.172.29:9200/tfs_index/_search?pretty", content);
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                // Log the response body for debugging
-                var resp = await response.Content.ReadAsStringAsync();
-                return BadRequest($"Error querying Elasticsearch. Response: {resp}");
-            }
+                // Call the service method to execute the query
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
 
-            var responseBody = await response.Content.ReadAsStringAsync();
-            var searchResponse = JsonConvert.DeserializeObject<WorkItemBugCountResponse.Models.WorkItemBugCountResponse>(responseBody);
+                var aggregations = response.GetProperty("aggregations");
+                var bugsCount = aggregations.GetProperty("workitem_bugs_count");
+                var buckets = bugsCount.GetProperty("buckets");
 
-            
-            var result = new List<object>();
-
-            foreach (var item in searchResponse.Aggregations.WorkitemBugsCount.Buckets)
-            {
-                var workItem = new
+                // Transform the buckets into the desired output format
+                var result = buckets.EnumerateArray().Select(bucket => new
                 {
-                    workItemId = item.Key,
-                    bugsCount = item.Bugs.DocCount
-                };
-                result.Add(workItem);
+                    workItemId = bucket.GetProperty("key").GetInt32(),
+                    bugsCount = bucket.GetProperty("bugs").GetProperty("doc_count").GetInt32()
+                });
+
+                // Return the transformed result
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                // Log and return the error response
+                return BadRequest($"Error querying Elasticsearch: {ex.Message}");
             }
 
-            return Ok(result);
         }
 
     }
