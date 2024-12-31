@@ -32,6 +32,8 @@ namespace TfsApi.Controllers
             var username = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
             var rawEmail = User.Identity?.Name;
 
+            Console.WriteLine("Username: "+username);
+            Console.WriteLine("Email: "+rawEmail);
             var email = rawEmail?.Contains("#") == true 
                 ? rawEmail.Split('#').Last() 
                 : rawEmail;

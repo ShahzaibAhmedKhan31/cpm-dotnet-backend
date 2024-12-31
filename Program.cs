@@ -64,6 +64,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.CallbackPath = builder.Configuration["AzureAd:CallbackPath"];
         options.SaveTokens = true; // Save tokens in HttpContext for access later
         options.ResponseType = "code"; // Use Authorization Code Flow
+        options.Scope.Add("email");
+        options.Scope.Add("profile");
+
 
         // Optional: Customize OpenIdConnect events for advanced scenarios
         options.Events = new OpenIdConnectEvents
