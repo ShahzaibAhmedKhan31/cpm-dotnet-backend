@@ -28,6 +28,14 @@ namespace TfsApi.Controllers
         [Route("bugs_count")]
         public async Task<IActionResult> BugsCountApi([FromBody] SearchRequest request)
         {
+
+            var username = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true 
+                ? rawEmail.Split('#').Last() 
+                : rawEmail;
+
             // Construct the query as a JSON string
             string query = $@"
             {{
@@ -45,7 +53,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""CURRENT_ASSIGNEE.keyword"": ""*{request.Email}*""
+                                                ""CURRENT_ASSIGNEE.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -61,7 +69,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""ASSIGNED_TO.keyword"": ""*{request.Email}*""
+                                                ""ASSIGNED_TO.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -155,6 +163,13 @@ namespace TfsApi.Controllers
         public async Task<IActionResult> TaskCount([FromBody] SearchRequest request)
         {
 
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true 
+                ? rawEmail.Split('#').Last() 
+                : rawEmail;
+
+
             // Construct the query as a JSON string
             string query = $@"
             {{
@@ -172,7 +187,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""CURRENT_ASSIGNEE.keyword"": ""*{request.Email}*""
+                                                ""CURRENT_ASSIGNEE.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -188,7 +203,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""ASSIGNED_TO.keyword"": ""*{request.Email}*""
+                                                ""ASSIGNED_TO.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -288,6 +303,12 @@ namespace TfsApi.Controllers
         public async Task<IActionResult> TaskCompletionRate([FromBody] SearchRequest request)
         {
 
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true 
+                ? rawEmail.Split('#').Last() 
+                : rawEmail;
+
             // Construct the query as a JSON string
             string query = $@"
             {{
@@ -305,7 +326,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""CURRENT_ASSIGNEE.keyword"": ""*{request.Email}*""
+                                                ""CURRENT_ASSIGNEE.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -321,7 +342,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""ASSIGNED_TO.keyword"": ""*{request.Email}*""
+                                                ""ASSIGNED_TO.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -426,6 +447,12 @@ namespace TfsApi.Controllers
         public async Task<IActionResult> WorkItemBugCount([FromBody] SearchRequest request)
         {
 
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true 
+                ? rawEmail.Split('#').Last() 
+                : rawEmail;
+
             // Construct the query as a JSON string
             string query = $@"
             {{
@@ -440,7 +467,7 @@ namespace TfsApi.Controllers
                             }},
                             {{
                                 ""wildcard"": {{
-                                    ""PARENT_ASSIGNEE.keyword"": ""*{request.Email}*""
+                                    ""PARENT_ASSIGNEE.keyword"": ""*{email}*""
                                 }}
                             }},
                             {{

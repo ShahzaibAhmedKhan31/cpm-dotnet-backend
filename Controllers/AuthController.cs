@@ -44,6 +44,7 @@ namespace WebApplication1.Controllers
         {
             var token = HttpContext.GetTokenAsync("access_token").Result; // Get the token (optional here)
             Console.WriteLine("Access Token: " + token);
+            
             return Challenge(new AuthenticationProperties
             {
                 RedirectUri = "http://localhost:3000/dashboard" // Redirect to React app after login
@@ -69,7 +70,7 @@ namespace WebApplication1.Controllers
             // }, CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme);
             
                 SignOut(CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme);
-                return Ok(new { Message = "Logged out successfully" });
+                return Ok(new {statusCode=200, Message = "Logged out successfully"});
 
         }
 
