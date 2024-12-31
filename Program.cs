@@ -67,7 +67,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Scope.Add("email");
         options.Scope.Add("profile");
 
-
         // Optional: Customize OpenIdConnect events for advanced scenarios
         options.Events = new OpenIdConnectEvents
         {

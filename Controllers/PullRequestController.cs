@@ -22,6 +22,13 @@ namespace PullRequest.Controllers
         [HttpPost("pr_count_by_month")]
         public async Task<IActionResult> GetPrCountByMonthApi([FromBody] SearchByUserDateRequest request)
         {
+            
+            // Extract claims from the token
+            var name = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true ? rawEmail.Split('#').Last() : rawEmail;
+            
             if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
             {
                 return BadRequest("CreatedByName and DateRange must be provided.");
@@ -48,7 +55,7 @@ namespace PullRequest.Controllers
                             }},
                             {{
                                 ""term"": {{
-                                    ""CREATED_BY_NAME.keyword"": ""{request.UserName}""
+                                    ""CREATED_BY_NAME.keyword"": ""{name}""
                                 }}
                             }}
                         ],
@@ -111,6 +118,12 @@ namespace PullRequest.Controllers
         [HttpPost("pr_with_comments_count")]
         public async Task<IActionResult> GetPrWithCommentsCountApi([FromBody] SearchByUserDateRequest request)
         {
+            // Extract claims from the token
+            var name = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true ? rawEmail.Split('#').Last() : rawEmail;
+            
             // Ensure the 'createdByName' and 'dateRangeStart' are provided in the request
             if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
             {
@@ -119,13 +132,13 @@ namespace PullRequest.Controllers
 
             var query = $@"
             {{
-            ""_source"": [""LAST_MERGE_COMMIT_ID"", ""TOTAL_NUMBER_OF_COMMENTS"", ""PR_TITLE""],
+            ""_source"": [""PR_ID"", ""TOTAL_NUMBER_OF_COMMENTS"", ""PR_TITLE""],
             ""query"": {{
                 ""bool"": {{
                 ""must"": [
                     {{
                     ""term"": {{
-                        ""CREATED_BY_NAME.keyword"": ""{request.UserName}""
+                        ""CREATED_BY_NAME.keyword"": ""{name}""
                     }}
                     }}
                 ],
@@ -182,6 +195,12 @@ namespace PullRequest.Controllers
         [HttpPost("reviewed_pr_count")]
         public async Task<IActionResult> GetReviewedPrCountApi([FromBody] SearchByUserDateRequest request)
         {
+            // Extract claims from the token
+            var name = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true ? rawEmail.Split('#').Last() : rawEmail;
+
             // Ensure the 'reviewerName' and 'dateRangeStart' are provided in the request
             if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
             {
@@ -195,7 +214,7 @@ namespace PullRequest.Controllers
                 ""must"": [
                     {{
                     ""term"": {{
-                        ""CLOSED_BY_NAME.keyword"": ""{request.UserName}""
+                        ""CLOSED_BY_NAME.keyword"": ""{name}""
                     }}
                     }}
                 ],

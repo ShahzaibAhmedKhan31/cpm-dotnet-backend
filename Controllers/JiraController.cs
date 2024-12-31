@@ -67,15 +67,18 @@ namespace JiraApi.Controllers
         [HttpPost("completed_and_breached")]
         public async Task<IActionResult> CompletedAndBreachedApi([FromBody] SearchByUserDateRequest request)
         {
+
+            // Extract claims from the token
+            var name = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true ? rawEmail.Split('#').Last() : rawEmail;
+
             // Ensure the 'user_name' and 'date' are provided in the request
             if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
             {
                 return BadRequest("UserName and Date must be provided.");
             }
-
-            Console.WriteLine(request.UserName);
-            Console.WriteLine(request.Date);
-            Console.WriteLine(request.Index);
 
             var query = $@"
             {{
@@ -209,15 +212,18 @@ namespace JiraApi.Controllers
         [HttpPost("breached_and_non_breached")]
         public async Task<IActionResult> BreachedAndNonBreachedApi([FromBody] SearchByUserDateRequest request)
         {
+            
+            // Extract claims from the token
+            var name = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true ? rawEmail.Split('#').Last() : rawEmail;
+
             // Ensure the 'user_name' and 'date' are provided in the request
             if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
             {
                 return BadRequest("UserName and Date must be provided.");
             }
-
-            Console.WriteLine(request.UserName);
-            Console.WriteLine(request.Date);
-            Console.WriteLine(request.Index);
 
             var query = $@"
             {{
@@ -390,15 +396,20 @@ namespace JiraApi.Controllers
         [HttpPost("completionrate")]
         public async Task<IActionResult> CompletionRateApi([FromBody] SearchByUserDateRequest request)
         {
+
+
+            
+            // Extract claims from the token
+            var name = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true ? rawEmail.Split('#').Last() : rawEmail;
+
             // Ensure the 'user_name' and 'date' are provided in the request
             if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
             {
                 return BadRequest("UserName and Date must be provided.");
             }
-
-            Console.WriteLine(request.UserName);
-            Console.WriteLine(request.Date);
-            Console.WriteLine(request.Index);
 
             var query = $@"
             {{
