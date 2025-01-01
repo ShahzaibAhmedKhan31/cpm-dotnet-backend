@@ -34,14 +34,12 @@ namespace PullRequest.Controllers
                 return BadRequest("CreatedByName and DateRange must be provided.");
             }
 
-            var username = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
-            var rawEmail = User.Identity?.Name;
+            // var rawEmail = User.Identity?.Name;
 
-            Console.WriteLine("PR controller:Username: "+username);
-            Console.WriteLine("PR controller:Email: "+rawEmail);
-            var email = rawEmail?.Contains("#") == true 
-                ? rawEmail.Split('#').Last() 
-                : rawEmail;
+            // Console.WriteLine("PR controller:Email: "+rawEmail);
+            // var email = rawEmail?.Contains("#") == true 
+            //     ? rawEmail.Split('#').Last() 
+            //     : rawEmail;
 
             var query = $@"
             {{

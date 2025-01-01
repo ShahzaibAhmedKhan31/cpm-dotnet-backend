@@ -31,7 +31,7 @@ builder.Services.AddSession(options =>
 });
 
 // Add services to the container before building the app
-
+builder.Services.Configure<IndexesName>(builder.Configuration.GetSection("IndexesName"));
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -82,6 +82,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 // Register the ElasticSearchService
 builder.Services.Configure<ElasticsearchSettings>(builder.Configuration.GetSection("ElasticsearchSettings"));
 builder.Services.AddSingleton<ElasticSearchService>();
+
+
+
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllersWithViews()

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ApiRequest.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace TfsApi.Controllers
 {
@@ -17,11 +18,14 @@ namespace TfsApi.Controllers
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ElasticSearchService _elasticSearchService;
+        private readonly string _indexName;
 
-        public TfsController(IHttpClientFactory httpClientFactory, ElasticSearchService elasticSearchService)
+        public TfsController(IHttpClientFactory httpClientFactory, ElasticSearchService elasticSearchService, IOptions<IndexesName> settings)
         {
             _httpClientFactory = httpClientFactory;
              _elasticSearchService = elasticSearchService;
+             _indexName = settings.Value.TFS;
+
         }
 
         [HttpPost]
@@ -128,7 +132,7 @@ namespace TfsApi.Controllers
             {
 
                 // Use the service to execute the Elasticsearch query
-                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 // Parse the response to access "aggregations" -> "months" -> "buckets"
                 var aggregations = searchResponse.GetProperty("aggregations");
@@ -266,7 +270,7 @@ namespace TfsApi.Controllers
             {
 
                 // Use the service to execute the Elasticsearch query
-                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 // Parse the response to access "aggregations" -> "months" -> "buckets"
                 var aggregations = searchResponse.GetProperty("aggregations");
@@ -409,7 +413,7 @@ namespace TfsApi.Controllers
             try
             {
                 // Use the service to execute the Elasticsearch query
-                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 // Process the response (example: accessing aggregations and buckets)
                 var aggregations = searchResponse.GetProperty("aggregations");
@@ -515,7 +519,7 @@ namespace TfsApi.Controllers
             try
             {
                 // Call the service method to execute the query
-                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 var aggregations = response.GetProperty("aggregations");
                 var bugsCount = aggregations.GetProperty("workitem_bugs_count");
