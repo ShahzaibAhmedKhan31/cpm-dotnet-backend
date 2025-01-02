@@ -2,6 +2,8 @@ using ApiRequest.Models;
 using ApiResponse.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
+
 
 namespace JiraApi.Controllers
 {
@@ -11,11 +13,14 @@ namespace JiraApi.Controllers
     public class JiraController : ControllerBase
     {
         private readonly ElasticSearchService _elasticSearchService;
+        private readonly string _indexName;
 
         // Constructor to inject ElasticSearchService
-        public JiraController(ElasticSearchService elasticSearchService)
+        public JiraController(ElasticSearchService elasticSearchService, IOptions<IndexesName> settings)
         {
             _elasticSearchService = elasticSearchService;
+            _indexName = settings.Value.JIRA;
+            
         }
 
         // POST api/jira/completed_issue_by_id
@@ -45,13 +50,8 @@ namespace JiraApi.Controllers
 
             try
             {
-                // Execute Elasticsearch query
-                if (string.IsNullOrEmpty(request.Index))
-                {
-                    return BadRequest("Index must be provided.");
-                }
 
-                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 // Return the result
                 return Ok(response);
@@ -164,14 +164,9 @@ namespace JiraApi.Controllers
             ""size"": 0
             }}";
 
-            // Execute Elasticsearch query
-                if (string.IsNullOrEmpty(request.Index))
-                {
-                    return BadRequest("Index must be provided.");
-                }
 
             // Execute Elasticsearch query
-            var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
+            var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
             
             // Initialize the result list
             var monthlyDataList = new List<CompletedAndBreachedApi>();
@@ -344,14 +339,9 @@ namespace JiraApi.Controllers
             try
                 {
                 
-                // Execute Elasticsearch query
-                if (string.IsNullOrEmpty(request.Index))
-                {
-                    return BadRequest("Index must be provided.");
-                }
 
                 // Execute Elasticsearch query
-                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 // Safely extract the counts for breached and non-breached issues
                 int breachedCount = 0;
@@ -513,16 +503,9 @@ namespace JiraApi.Controllers
 
             try
             {
-                // Execute Elasticsearch query
-                if (string.IsNullOrEmpty(request.Index))
-                {
-                    return BadRequest("Index must be provided.");
-                }
                 
                 // Execute Elasticsearch query
-                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
-
-                Console.WriteLine(response);
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 var monthlyData = response
                 .GetProperty("aggregations")

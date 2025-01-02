@@ -2,6 +2,7 @@ using ApiRequest.Models;
 using ApiResponse.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace PullRequest.Controllers
 {
@@ -12,11 +13,15 @@ namespace PullRequest.Controllers
     {
 
         private readonly ElasticSearchService _elasticSearchService;
+        private readonly string _indexName;
 
         // Constructor to inject ElasticSearchService
-        public PullRequestController(ElasticSearchService elasticSearchService)
+        public PullRequestController(ElasticSearchService elasticSearchService, IOptions<IndexesName> settings)
         {
             _elasticSearchService = elasticSearchService;
+            _indexName = settings.Value.PR;
+            
+            
         }
 
         [HttpPost("pr_count_by_month")]
@@ -82,14 +87,9 @@ namespace PullRequest.Controllers
 
             try
             {   
-                // Execute Elasticsearch query
-                if (string.IsNullOrEmpty(request.Index))
-                {
-                    return BadRequest("Index must be provided.");
-                }
 
                 // Execute Elasticsearch query
-                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                  // Parse the response to extract the pr_count by month
                 var monthlyData = response
@@ -121,6 +121,10 @@ namespace PullRequest.Controllers
             var rawEmail = User.Identity?.Name;
 
             var email = rawEmail?.Contains("#") == true ? rawEmail.Split('#').Last() : rawEmail;
+
+            Console.WriteLine("Username in pr_with_comments_count api:", name);
+            Console.WriteLine("Email in pr_with_comments_count api: ", email);
+
             
             // Ensure the 'createdByName' and 'dateRangeStart' are provided in the request
             if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Date))
@@ -159,13 +163,9 @@ namespace PullRequest.Controllers
             {
 
                 // Execute Elasticsearch query
-                if (string.IsNullOrEmpty(request.Index))
-                {
-                    return BadRequest("Index must be provided.");
-                }
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
-                // Execute Elasticsearch query
-                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
+                Console.WriteLine("Elastic Search response: ", response);
 
                 // Parse the response to extract PR details
                 var prDetails = response
@@ -174,12 +174,13 @@ namespace PullRequest.Controllers
                     .EnumerateArray()
                     .Select(hit => new GetPrWithCommentsCountApiResponse
                     {
-                        Id = hit.GetProperty("_source").GetProperty("LAST_MERGE_COMMIT_ID").GetString(),
+                        Id = hit.GetProperty("_source").GetProperty("PR_ID").GetInt32(),
                         PrCommentsCount = hit.GetProperty("_source").GetProperty("TOTAL_NUMBER_OF_COMMENTS").GetInt32(),
                         PrTitle = hit.GetProperty("_source").GetProperty("PR_TITLE").GetString()
                     })
                     .ToList();
 
+                Console.WriteLine(prDetails);
                 // Return the formatted response
                 return Ok(prDetails);
             }
@@ -242,14 +243,9 @@ namespace PullRequest.Controllers
 
             try
             {
-                // Execute Elasticsearch query
-                if (string.IsNullOrEmpty(request.Index))
-                {
-                    return BadRequest("Index must be provided.");
-                }
                 
                 // Execute Elasticsearch query
-                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, request.Index);
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 // Parse the response to extract the pr_count by month
                 var monthlyData = response

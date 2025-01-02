@@ -30,7 +30,7 @@ namespace ApiResponse.Models
 
     public class GetPrWithCommentsCountApiResponse
     {
-        public string? Id { get; set; }
+        public int? Id { get; set; }
 
         public string? PrTitle { get; set; }
 
