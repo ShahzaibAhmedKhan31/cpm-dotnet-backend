@@ -5,12 +5,12 @@
 ```
 curl -X POST -H "Content-Type: application/json" \
 -d '{
-"name": "elasticsearch-sink-connector-pr-v3",
+"name": "elasticsearch-sink-connector-pr-v10",
 "config": {
   "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
   "tasks.max": "1",
-  "topics": "PR_STREAM_WITH_COMMENTS_COUNT",
-  "key.ignore": "true",
+  "topics": "PR_COMPLETED_STREAM",
+  "key.ignore": "false",
   "value.converter": "org.apache.kafka.connect.json.JsonConverter",
   "key.converter": "org.apache.kafka.connect.storage.StringConverter",
   "connection.url": "http://elasticsearch:9200",
@@ -23,6 +23,4 @@ curl -X POST -H "Content-Type: application/json" \
   "errors.log.enable": "true",
   "errors.log.include.messages": "true"
 }}' http://localhost:8083/connectors
-
 ```
-

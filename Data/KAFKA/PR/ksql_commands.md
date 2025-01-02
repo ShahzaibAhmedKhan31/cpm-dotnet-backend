@@ -318,8 +318,9 @@ CREATE STREAM PR_COMMENTS_UNNORMALIZED (
 ## Command Number 3 (Create PR Completed Stream):
 
 ```
-CREATE STREAM PR_COMPELTED AS 
-SELECT 
+CREATE STREAM PR_COMPLETED AS 
+SELECT
+  UUID() AS unique_id,
   resource->pullRequestId AS PR_ID,
   resource->createdBy->displayName AS createdByName,
   resource->title AS PR_TITLE,
@@ -339,7 +340,8 @@ EMIT CHANGES;
 CREATE STREAM PR_COMMENTS AS
 SELECT 
     resource->pullRequest->pullRequestId AS PR_ID,
-    resource->comment->content AS Comment
+    resource->comment->content AS Comment,
+    resource->comment->publishedDate as comment_published_date
 FROM 
     PR_COMMENTS_UNNORMALIZED
 EMIT CHANGES;
@@ -352,10 +354,10 @@ CREATE TABLE PR_COMMENTS_COUNT AS
 SELECT 
     PR_ID,
     COUNT(*) AS total_number_of_comments,
-	MIN(COMMENT_PUBLISHED_DATE) AS first_comment_date
+	  MIN(COMMENT_PUBLISHED_DATE) AS first_comment_date
 FROM 
     PR_COMMENTS
-GROUP BY 
+GROUP BY
     PR_ID
 EMIT CHANGES;
 ```
@@ -364,8 +366,9 @@ EMIT CHANGES;
 ### Command Number 6 (Create Finalized PR Stream with comments count):
 
 ```
-CREATE STREAM PR_STREAM_WITH_COMMENTS_COUNT AS 
-SELECT 
+CREATE STREAM PR_COMPLETED_STREAM AS 
+SELECT
+  S.unique_id AS unique_id,
   S.PR_ID AS PR_ID,
   S.createdByName AS created_By_Name,
   S.PR_TITLE AS PR_TITLE,
@@ -375,12 +378,13 @@ SELECT
   S.ClosedByName AS Closed_By_Name,
   S.last_merge_commit_id AS last_merge_commit_id,
   COALESCE(T.Total_Number_Of_Comments, CAST(0 AS BIGINT)) AS Total_Number_Of_Comments,
-  T.first_comment_date AS PR_first_comment_date,
+  T.first_comment_date AS PR_first_comment_date
 FROM 
-  PR_COMPELTED S
+  PR_COMPLETED S
 LEFT OUTER JOIN 
   PR_COMMENTS_COUNT T 
 ON 
   S.PR_ID = T.PR_ID
+PARTITION BY S.unique_id
 EMIT CHANGES;
 ```
