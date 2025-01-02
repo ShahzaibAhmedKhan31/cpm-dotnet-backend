@@ -31,7 +31,7 @@ builder.Services.AddSession(options =>
 });
 
 // Add services to the container before building the app
-
+builder.Services.Configure<IndexesName>(builder.Configuration.GetSection("IndexesName"));
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -66,6 +66,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.CallbackPath = builder.Configuration["AzureAd:CallbackPath"];
         options.SaveTokens = true; // Save tokens in HttpContext for access later
         options.ResponseType = "code"; // Use Authorization Code Flow
+        options.Scope.Add("email");
+        options.Scope.Add("profile");
 
         // Optional: Customize OpenIdConnect events for advanced scenarios
         options.Events = new OpenIdConnectEvents
@@ -82,6 +84,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 // Register the ElasticSearchService
 builder.Services.Configure<ElasticsearchSettings>(builder.Configuration.GetSection("ElasticsearchSettings"));
 builder.Services.AddSingleton<ElasticSearchService>();
+
+
+
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllersWithViews()

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ApiRequest.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace TfsApi.Controllers
 {
@@ -17,17 +18,30 @@ namespace TfsApi.Controllers
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ElasticSearchService _elasticSearchService;
+        private readonly string _indexName;
 
-        public TfsController(IHttpClientFactory httpClientFactory, ElasticSearchService elasticSearchService)
+        public TfsController(IHttpClientFactory httpClientFactory, ElasticSearchService elasticSearchService, IOptions<IndexesName> settings)
         {
             _httpClientFactory = httpClientFactory;
              _elasticSearchService = elasticSearchService;
+             _indexName = settings.Value.TFS;
+
         }
 
         [HttpPost]
         [Route("bugs_count")]
         public async Task<IActionResult> BugsCountApi([FromBody] SearchRequest request)
         {
+
+            var username = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var rawEmail = User.Identity?.Name;
+
+            Console.WriteLine("Username: "+username);
+            Console.WriteLine("Email: "+rawEmail);
+            var email = rawEmail?.Contains("#") == true 
+                ? rawEmail.Split('#').Last() 
+                : rawEmail;
+
             // Construct the query as a JSON string
             string query = $@"
             {{
@@ -45,7 +59,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""CURRENT_ASSIGNEE.keyword"": ""*{request.Email}*""
+                                                ""CURRENT_ASSIGNEE.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -61,7 +75,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""ASSIGNED_TO.keyword"": ""*{request.Email}*""
+                                                ""ASSIGNED_TO.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -118,7 +132,7 @@ namespace TfsApi.Controllers
             {
 
                 // Use the service to execute the Elasticsearch query
-                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 // Parse the response to access "aggregations" -> "months" -> "buckets"
                 var aggregations = searchResponse.GetProperty("aggregations");
@@ -155,6 +169,13 @@ namespace TfsApi.Controllers
         public async Task<IActionResult> TaskCount([FromBody] SearchRequest request)
         {
 
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true 
+                ? rawEmail.Split('#').Last() 
+                : rawEmail;
+
+
             // Construct the query as a JSON string
             string query = $@"
             {{
@@ -172,7 +193,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""CURRENT_ASSIGNEE.keyword"": ""*{request.Email}*""
+                                                ""CURRENT_ASSIGNEE.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -188,7 +209,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""ASSIGNED_TO.keyword"": ""*{request.Email}*""
+                                                ""ASSIGNED_TO.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -249,7 +270,7 @@ namespace TfsApi.Controllers
             {
 
                 // Use the service to execute the Elasticsearch query
-                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 // Parse the response to access "aggregations" -> "months" -> "buckets"
                 var aggregations = searchResponse.GetProperty("aggregations");
@@ -288,6 +309,12 @@ namespace TfsApi.Controllers
         public async Task<IActionResult> TaskCompletionRate([FromBody] SearchRequest request)
         {
 
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true 
+                ? rawEmail.Split('#').Last() 
+                : rawEmail;
+
             // Construct the query as a JSON string
             string query = $@"
             {{
@@ -305,7 +332,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""CURRENT_ASSIGNEE.keyword"": ""*{request.Email}*""
+                                                ""CURRENT_ASSIGNEE.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -321,7 +348,7 @@ namespace TfsApi.Controllers
                                         }},
                                         {{
                                             ""wildcard"": {{
-                                                ""ASSIGNED_TO.keyword"": ""*{request.Email}*""
+                                                ""ASSIGNED_TO.keyword"": ""*{email}*""
                                             }}
                                         }}
                                     ]
@@ -386,7 +413,7 @@ namespace TfsApi.Controllers
             try
             {
                 // Use the service to execute the Elasticsearch query
-                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+                var searchResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 // Process the response (example: accessing aggregations and buckets)
                 var aggregations = searchResponse.GetProperty("aggregations");
@@ -426,6 +453,12 @@ namespace TfsApi.Controllers
         public async Task<IActionResult> WorkItemBugCount([FromBody] SearchRequest request)
         {
 
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true 
+                ? rawEmail.Split('#').Last() 
+                : rawEmail;
+
             // Construct the query as a JSON string
             string query = $@"
             {{
@@ -440,7 +473,7 @@ namespace TfsApi.Controllers
                             }},
                             {{
                                 ""wildcard"": {{
-                                    ""PARENT_ASSIGNEE.keyword"": ""*{request.Email}*""
+                                    ""PARENT_ASSIGNEE.keyword"": ""*{email}*""
                                 }}
                             }},
                             {{
@@ -486,7 +519,7 @@ namespace TfsApi.Controllers
             try
             {
                 // Call the service method to execute the query
-                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, "tfs_index");
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
 
                 var aggregations = response.GetProperty("aggregations");
                 var bugsCount = aggregations.GetProperty("workitem_bugs_count");
@@ -509,6 +542,80 @@ namespace TfsApi.Controllers
             }
 
         }
+
+    [HttpGet]
+    [Route("workitems")]
+    public async Task<IActionResult> GetWorkItems([FromQuery] int month)
+    {
+        
+
+        var rawEmail = User.Identity?.Name;
+
+        // var email = rawEmail?.Contains("#") == true 
+        //     ? rawEmail.Split('#').Last() 
+        //     : rawEmail;
+        var email = "hamza01961@gmail.com";
+
+        // Construct the query as a JSON string, replacing email and month dynamically
+        string query = $@"
+        {{
+            ""query"": {{
+                ""bool"": {{
+                    ""must"": [
+                        {{
+                            ""wildcard"": {{
+                                ""ASSIGNED_TO.keyword"": ""*{email}*""
+                            }}
+                        }},
+                        {{
+                            ""term"": {{
+                                ""STREAM_NAME.keyword"": ""completed_work_items""
+                            }}
+                        }},
+                        {{
+                            ""range"": {{
+                                ""CLOSED_DATE"": {{
+                                    ""gte"": ""now-{month}M/M"",
+                                    ""lte"": ""now""
+                                }}
+                            }}
+                        }},
+                        {{
+                            ""terms"": {{
+                                ""WORK_ITEM_TYPE.keyword"": [""Bug"", ""Task""]
+                            }}
+                        }}
+                    ]
+                }}
+            }}
+        }}";
+
+        try{
+            // Call the service method to execute the query
+            var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
+
+            // Extract hits from the response
+            var hits = response.GetProperty("hits").GetProperty("hits");
+
+            // Transform the hits into an array of JSON objects
+            var result = hits.EnumerateArray().Select(hit => new
+            {
+                createdDate = hit.GetProperty("_source").GetProperty("CREATED_DATE").GetString(),
+                closedDate = hit.GetProperty("_source").GetProperty("CLOSED_DATE").GetString(),
+                title = hit.GetProperty("_source").GetProperty("TITLE").GetString(),
+                workItemId= hit.GetProperty("_source").GetProperty("WORK_ITEM_ID").GetInt32(),
+                workItemType = hit.GetProperty("_source").GetProperty("WORK_ITEM_TYPE").GetString()
+            }).ToArray();
+
+            // Return the result as JSON
+            return Ok(result);
+        }
+        catch (Exception ex){
+            // Log the error and return a bad request response
+            return BadRequest($"Error querying Elasticsearch: {ex.Message}");
+        }
+    
+    }
 
     }
 }
