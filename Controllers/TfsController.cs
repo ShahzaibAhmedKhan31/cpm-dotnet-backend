@@ -543,5 +543,79 @@ namespace TfsApi.Controllers
 
         }
 
+    [HttpGet]
+    [Route("workitems")]
+    public async Task<IActionResult> GetWorkItems([FromQuery] int month)
+    {
+        
+
+        var rawEmail = User.Identity?.Name;
+
+        var email = rawEmail?.Contains("#") == true 
+            ? rawEmail.Split('#').Last() 
+            : rawEmail;
+        // var email = "hamza01961@gmail.com";
+
+        // Construct the query as a JSON string, replacing email and month dynamically
+        string query = $@"
+        {{
+            ""query"": {{
+                ""bool"": {{
+                    ""must"": [
+                        {{
+                            ""wildcard"": {{
+                                ""ASSIGNED_TO.keyword"": ""*{email}*""
+                            }}
+                        }},
+                        {{
+                            ""term"": {{
+                                ""STREAM_NAME.keyword"": ""completed_work_items""
+                            }}
+                        }},
+                        {{
+                            ""range"": {{
+                                ""CLOSED_DATE"": {{
+                                    ""gte"": ""now-{month}M/M"",
+                                    ""lte"": ""now""
+                                }}
+                            }}
+                        }},
+                        {{
+                            ""terms"": {{
+                                ""WORK_ITEM_TYPE.keyword"": [""Bug"", ""Task""]
+                            }}
+                        }}
+                    ]
+                }}
+            }}
+        }}";
+
+        try{
+            // Call the service method to execute the query
+            var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
+
+            // Extract hits from the response
+            var hits = response.GetProperty("hits").GetProperty("hits");
+
+            // Transform the hits into an array of JSON objects
+            var result = hits.EnumerateArray().Select(hit => new
+            {
+                createdDate = hit.GetProperty("_source").GetProperty("CREATED_DATE").GetString(),
+                closedDate = hit.GetProperty("_source").GetProperty("CLOSED_DATE").GetString(),
+                title = hit.GetProperty("_source").GetProperty("TITLE").GetString(),
+                workItemId= hit.GetProperty("_source").GetProperty("WORK_ITEM_ID").GetInt32(),
+                workItemType = hit.GetProperty("_source").GetProperty("WORK_ITEM_TYPE").GetString()
+            }).ToArray();
+
+            // Return the result as JSON
+            return Ok(result);
+        }
+        catch (Exception ex){
+            // Log the error and return a bad request response
+            return BadRequest($"Error querying Elasticsearch: {ex.Message}");
+        }
+    
+    }
+
     }
 }
