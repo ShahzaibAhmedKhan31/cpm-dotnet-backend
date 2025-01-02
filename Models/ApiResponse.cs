@@ -44,4 +44,28 @@ namespace ApiResponse.Models
         public int PrReviewCount { get; set; }
     }
 
+        public class GetCompletedIssueListApiResponse
+    {
+        public string? Id {get; set;}
+
+        public string? IssueKey {get; set;}
+
+        public string? Status {get; set;}
+
+        public string? Summary {get; set;}
+
+        public string? Severity {get; set;}
+
+        public string? L2_breach {get; set;}
+
+        public string? L3_breach {get; set;}
+
+        public string? L4_breach {get; set;}
+
+        public string? L5_breach {get; set;}
+
+    }
+	
+	
+
 }
