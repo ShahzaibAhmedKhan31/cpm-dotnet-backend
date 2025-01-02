@@ -22,6 +22,16 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Add session services
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set the timeout duration
+    options.Cookie.HttpOnly = true; // Make the session cookie HTTP only
+    options.Cookie.IsEssential = true; // Mark the session cookie as essential
+});
+
+// Add services to the container before building the app
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -83,7 +93,6 @@ var app = builder.Build();
 
 app.UseCors("AllowSpecificOrigins");
 
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -100,6 +109,8 @@ app.UseRouting();
 // Use Authentication and Authorization Middleware
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSession();
+
 app.MapControllers();
 
 app.MapGet("/search", async (ElasticSearchService elasticSearchService) =>
