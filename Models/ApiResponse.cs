@@ -50,6 +50,8 @@ namespace ApiResponse.Models
 
         public string? IssueKey {get; set;}
 
+        public string? Date {get; set;}
+
         public string? Status {get; set;}
 
         public string? Summary {get; set;}
