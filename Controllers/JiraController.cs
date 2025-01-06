@@ -599,6 +599,7 @@ namespace JiraApi.Controllers
                 {
                     Id = hits.GetProperty("_id").GetString(),
                     IssueKey = hits.GetProperty("_source") .GetProperty("ISSUE_KEY").GetString(),
+                    Date = hits.GetProperty("_source") .GetProperty("TIMESTAMP").GetString(),
                     Status = hits.GetProperty("_source") .GetProperty("CURRENT_STATUS").GetString(),
                     Summary = hits.GetProperty("_source") .GetProperty("SUMMARY").GetString(),
                     Severity = hits.GetProperty("_source") .GetProperty("SEVERITYWISECATEGORY_VALUE").GetString(),
