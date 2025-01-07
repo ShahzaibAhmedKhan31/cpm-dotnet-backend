@@ -17,6 +17,29 @@ namespace WebApplication1.Controllers
             _context = context;
         }
 
+        // GET: api/task/{taskid}
+        [HttpGet("{taskid}")]
+        public async Task<ActionResult<TaskScore>> GetTaskScore(string taskid)
+        {
+            if (string.IsNullOrEmpty(taskid))
+            {
+                return BadRequest("TaskId is required.");
+            }
+
+            // Fetch the TaskScore for the given TaskId
+            var taskScore = await _context.TaskScores
+                                          .FirstOrDefaultAsync(ts => ts.taskid == taskid);
+
+            if (taskScore == null)
+            {
+                return NotFound($"No TaskScore found for TaskId: {taskid}");
+            }
+
+            // Return the TaskScore
+            return Ok(taskScore);
+        }
+
+
      // POST: api/task
 [HttpPost]
 public async Task<ActionResult<TaskScore>> PostTaskScore([FromBody] TaskScoreRequest taskScoreRequest)
