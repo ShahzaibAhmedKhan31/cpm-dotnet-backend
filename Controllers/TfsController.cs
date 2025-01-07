@@ -582,7 +582,7 @@ namespace TfsApi.Controllers
                         }},
                         {{
                             ""terms"": {{
-                                ""WORK_ITEM_TYPE.keyword"": [""Bug"", ""Task""]
+                                ""WORK_ITEM_TYPE.keyword"": [""Task""]
                             }}
                         }}
                     ]
