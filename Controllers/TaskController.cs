@@ -54,6 +54,6 @@ namespace WebApplication1.Controllers
     public class TaskScoreRequest
     {
         public string taskid { get; set; }
-        public int selfrating { get; set; }
+        public float selfrating { get; set; }
     }
 }

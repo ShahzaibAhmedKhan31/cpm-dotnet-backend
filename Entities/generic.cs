@@ -112,10 +112,10 @@ namespace WebApplication1.Models
         [Key]
         public int? scoreid { get; set; } // Nullable ScoreId since it is auto-incremented by the DB
         public string? taskid { get; set; } // TaskId can be nullable if you allow empty values
-        public int? superrating { get; set; } // Nullable SuperRating
-        public int? selfrating { get; set; } // Nullable SuperRating
-        public int? automatedrating { get; set; } // Nullable AutomatedRating
-        public string? comments { get; set; } // Nullable Comments
+        public float? superrating { get; set; } // Nullable SuperRating
+        public float? selfrating { get; set; } // Nullable SuperRating
+        public float? automatedrating { get; set; } // Nullable AutomatedRating
+        public float? comments { get; set; } // Nullable Comments
     }
 
     public class KpiDetail
