@@ -76,16 +76,7 @@ public class EmployeesService
                                     .FirstOrDefaultAsync();
 
         Dictionary<string, List<SubordinateInfo>> subordinatesHierarchy = await FetchSubordinatesHierarchyAsync(employeeId);
-        // var employees = await _context.Employees.ToListAsync();
-
-        foreach (var kvp in subordinatesHierarchy)
-        {
-            Console.WriteLine($"Supervisor {kvp.Key}:");
-            foreach (var sub in kvp.Value)
-            {
-                Console.WriteLine($"  - {sub}");
-            }
-        }
+        
         
         return subordinatesHierarchy;
 
