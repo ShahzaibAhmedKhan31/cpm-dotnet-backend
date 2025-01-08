@@ -328,7 +328,8 @@ SELECT
   resource->closedDate AS PR_Close_Date,
   resource->status AS PR_Status,
   resource->closedBy->displayName AS closedByName,
-  resource->lastMergeCommit->commitId as last_merge_commit_id
+  resource->lastMergeCommit->commitId as last_merge_commit_id,
+  resource->completionOptions->mergeCommitMessage as mergeCommitMessage
 FROM PR_UNNORMALIZED
 WHERE resource->status = 'completed'
 EMIT CHANGES;
@@ -362,12 +363,12 @@ GROUP BY
 EMIT CHANGES;
 ```
 
-
 ### Command Number 6 (Create Finalized PR Stream with comments count):
 
 ```
 CREATE STREAM PR_COMPLETED_STREAM AS 
 SELECT
+  'PR_COMPLETED_STREAM' AS TABLE_NAME,
   S.unique_id AS unique_id,
   S.PR_ID AS PR_ID,
   S.createdByName AS created_By_Name,
@@ -388,3 +389,167 @@ ON
 PARTITION BY S.unique_id
 EMIT CHANGES;
 ```
+
+### Command Number 7 (Create Denormalized PR_CREATED Stream):
+
+```
+CREATE STREAM PR_CREATED_UNNORMALIZED (
+  publisherId STRING,
+  resource STRUCT<
+    repository STRUCT<
+      id STRING,
+      name STRING,
+      url STRING,
+      project STRUCT<
+        id STRING,
+        name STRING,
+        url STRING
+      >
+    >,
+	createdBy STRUCT<
+        displayName STRING,
+        uniqueName STRING
+    >,
+    title STRING,
+    pullRequestId INT,
+    artifactId STRING
+  >,
+  createdDate STRING
+) WITH (
+  KAFKA_TOPIC='tfs.git.pullrequest.created',
+  VALUE_FORMAT='JSON'
+);
+```
+
+### Command Number 8 (Create Normalized PR_CREATED Stream):
+
+```
+CREATE STREAM PR_CREATED AS
+SELECT
+  LCASE(REGEXP_REPLACE(resource->artifactId, '.*%', '')) AS Artifacts_link,
+  resource->pullRequestId AS PR_ID,
+  resource->createdBy->displayName AS createdByName,
+  resource->createdBy->uniqueName AS createdByEmail,
+  resource->title AS title,
+  createdDate,
+  publisherId
+FROM PR_CREATED_UNNORMALIZED
+EMIT CHANGES;
+```
+### Command Number 9 (Create Normalized PR_CREATED Table):
+
+```
+CREATE TABLE PR_CREATED_TABLE AS
+SELECT
+  Artifacts_link,
+  LATEST_BY_OFFSET(PR_ID) AS PR_ID,
+  LATEST_BY_OFFSET(createdByName) AS createdByName,
+  LATEST_BY_OFFSET(createdByEmail) AS createdByEmail,
+  LATEST_BY_OFFSET(title) AS title,
+  LATEST_BY_OFFSET(createdDate) AS createdDate,
+  LATEST_BY_OFFSET(publisherId) AS publisherId
+FROM PR_CREATED
+GROUP BY Artifacts_link
+EMIT CHANGES;
+```
+
+### Command Number 10 (Create Denormalized Work_item_pr Stream):
+
+```
+CREATE STREAM work_items_updated_1 (
+    resource STRUCT<
+        workItemId INTEGER,
+		fields STRUCT<
+			"System.State" STRUCT<
+				oldValue VARCHAR, 
+				newValue VARCHAR
+>,
+			"System.ChangedDate" STRUCT<
+				oldValue VARCHAR,
+				newValue VARCHAR
+>
+>,
+		relations STRUCT<
+			added ARRAY<STRUCT<
+                rel VARCHAR,
+                url VARCHAR,
+                attributes STRUCT<
+                    authorizedDate VARCHAR,
+                    id INTEGER,
+                    resourceCreatedDate VARCHAR,
+                    resourceModifiedDate VARCHAR,
+                    revisedDate VARCHAR,
+                    name VARCHAR
+>
+>>
+>
+>
+) WITH (
+    KAFKA_TOPIC = 'tfs.workitem.updated',
+    VALUE_FORMAT = 'JSON'
+);
+```
+
+### Command Number 11 (Create Normalized Work_item_pr Stream):
+
+```
+CREATE STREAM workitem_pr_exploded AS
+SELECT
+	'workitem_pr_exploded' AS stream_name,
+	UUID() AS unique_id,
+	RESOURCE->WORKITEMID AS work_item_id,
+	EXPLODE(resource->relations->added) AS artifacts
+FROM work_items_updated_1
+EMIT CHANGES;
+```
+
+### Command Number 12 (Create Conditional Work_item_pr Stream):
+
+```
+CREATE STREAM workitem_pr_artifacts_stream AS
+SELECT
+	work_item_id,
+	LCASE(REGEXP_REPLACE(ARTIFACTS->URL, '.*%', '')) AS artifacts_link
+FROM workitem_pr_exploded
+WHERE ARTIFACTS->REL = 'ArtifactLink' AND ARTIFACTS->ATTRIBUTES->NAME = 'Pull Request'
+EMIT CHANGES;
+
+```
+
+### Command Number 13 (Create Conditional Work_item_pr Table):
+
+```
+CREATE TABLE workitem_pr_artifacts_table AS
+SELECT
+	ARTIFACTS_LINK,
+	LATEST_BY_OFFSET(WORK_ITEM_ID) AS WORK_ITEM_ID
+FROM workitem_pr_artifacts_stream
+GROUP BY ARTIFACTS_LINK
+EMIT CHANGES;
+```
+
+### Command Number 14 (Create JOINED PR_WORKITEM_TABLE table):
+
+```
+CREATE TABLE PR_WORKITEM_TABLE AS 
+SELECT
+  'PR_WORKITEM_TABLE' AS TABLE_NAME,
+  S.PR_ID AS PR_ID,
+  T.WORK_ITEM_ID AS WORK_ITEM_ID,
+  S.CREATEDBYNAME AS CREATEDBYNAME,
+  S.CREATEDBYEMAIL AS CREATEDBYEMAIL,
+  S.TITLE AS TITLE,
+  S.CREATEDDATE AS CREATEDDATE,
+  S.PUBLISHERID AS PUBLISHERID,
+  S.ARTIFACTS_LINK AS ARTIFACTS_LINK_P,
+  T.ARTIFACTS_LINK AS ARTIFACTS_LINK_W
+FROM PR_CREATED_TABLE S
+LEFT JOIN WORKITEM_PR_ARTIFACTS_TABLE T
+ON S.ARTIFACTS_LINK = T.ARTIFACTS_LINK
+EMIT CHANGES;
+```
+
+
+
+
+

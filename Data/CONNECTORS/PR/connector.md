@@ -5,7 +5,7 @@
 ```
 curl -X POST -H "Content-Type: application/json" \
 -d '{
-"name": "elasticsearch-sink-connector-pr-v10",
+"name": "elasticsearch-sink-connector-pr-v3",
 "config": {
   "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
   "tasks.max": "1",
@@ -23,4 +23,6 @@ curl -X POST -H "Content-Type: application/json" \
   "errors.log.enable": "true",
   "errors.log.include.messages": "true"
 }}' http://localhost:8083/connectors
+
 ```
+

@@ -19,4 +19,9 @@ namespace ApiRequest.Models
         public string ?Email { get; set; }
         public int Months { get; set; }
     }
+
+    public class SearchPrDetails
+    {
+        public int WorkItemId { get; set; }
+    }
 }

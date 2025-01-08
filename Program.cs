@@ -83,8 +83,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.Configure<ElasticsearchSettings>(builder.Configuration.GetSection("ElasticsearchSettings"));
 builder.Services.AddSingleton<ElasticSearchService>();
 
-
-
+builder.Services.AddSingleton<PrService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllersWithViews()
@@ -131,5 +130,7 @@ app.MapGet("/search", async (ElasticSearchService elasticSearchService) =>
         return Results.Problem(ex.Message);
     }
 });
+
+
 
 app.Run();

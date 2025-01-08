@@ -13,11 +13,14 @@ namespace PullRequest.Controllers
     {
 
         private readonly ElasticSearchService _elasticSearchService;
+
+        private readonly PrService _prService;
         private readonly string _indexName;
 
         // Constructor to inject ElasticSearchService
-        public PullRequestController(ElasticSearchService elasticSearchService, IOptions<IndexesName> settings)
+        public PullRequestController(ElasticSearchService elasticSearchService, IOptions<IndexesName> settings, PrService prService)
         {
+            _prService = prService;
             _elasticSearchService = elasticSearchService;
             _indexName = settings.Value.PR;
             
@@ -268,6 +271,103 @@ namespace PullRequest.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+[HttpPost("get_pr_details_by_work_item_id")]
+public async Task<IActionResult> GetPrDetailsApi([FromBody] SearchPrDetails request)
+{
+    try
+    {
+        // Get PR ID query based on work item ID
+        var get_pr_id_query = _prService.getPrIdQuery(request.WorkItemId);
+
+        // Execute the Elasticsearch query to get PR ID
+        var response_1 = await _elasticSearchService.ExecuteElasticsearchQueryAsync(get_pr_id_query, _indexName);
+
+        var total_1 = response_1
+            .GetProperty("hits")
+            .GetProperty("total")
+            .GetProperty("value").GetInt32();
+
+        // Check if any hits are returned
+        if (total_1 > 0)
+        {
+            // Extract the PR data from the first response
+            var workItemPrData = _prService.getWorkItemPrData(response_1);
+
+            // Ensure that workItemPrData contains data before proceeding
+            if (workItemPrData.Any())
+            {
+                // Get the PR details query based on the first item
+                var get_pr_details_query = _prService.GetPrDetailsQuery(workItemPrData[0].PrId);
+
+                // Execute Elasticsearch query for PR details
+                var response_2 = await _elasticSearchService.ExecuteElasticsearchQueryAsync(get_pr_details_query, _indexName);
+
+                var total_2 = response_2
+                    .GetProperty("hits")
+                    .GetProperty("total")
+                    .GetProperty("value").GetInt32();
+
+                // Return the response if PR details are found
+                if (total_2 > 0)
+                {
+                    var pr_details = _prService.getPrDetails(response_2);
+
+                    var createPrDetailsResponse = new GetPrDetailsApi 
+                    {
+                        CreatedByEmail = workItemPrData[0].CreatedByEmail,
+                        CreatedDate = workItemPrData[0].CreatedDate,
+                        CreatedByName = workItemPrData[0].CreatedByName,
+                        WorkItemId = workItemPrData[0].WorkItemId,
+                        PrId = workItemPrData[0].PrId,
+                        Title = workItemPrData[0].Title,
+                        TotalNumberOfComments = pr_details.TotalNumberOfComments.ToString(),
+                        LastMergeCommitId = pr_details.LastMergeCommitId,
+                        PrClosedDate = pr_details.PrClosedDate,
+                        PrClosedByName = pr_details.PrClosedByName,
+                        PrFirstCommentDate = pr_details.PrFirstCommentDate,
+                        PrStatus = pr_details.PrStatus
+                    };
+
+                    return Ok(createPrDetailsResponse);
+                }
+                else
+                {
+
+                    var createPrDetailsResponse = new GetPrDetailsApi 
+                    {
+                        CreatedByEmail = workItemPrData[0].CreatedByEmail,
+                        CreatedDate = workItemPrData[0].CreatedDate,
+                        CreatedByName = workItemPrData[0].CreatedByName,
+                        WorkItemId = workItemPrData[0].WorkItemId,
+                        PrId = workItemPrData[0].PrId,
+                        Title = workItemPrData[0].Title,
+                        TotalNumberOfComments = "",
+                        LastMergeCommitId = "",
+                        PrClosedDate = "",
+                        PrClosedByName = "",
+                        PrFirstCommentDate = "",
+                        PrStatus = "In-Progress"
+                    };
+                    return Ok(createPrDetailsResponse);
+                }
+            }
+            else
+            {
+                return Ok(new { message = "No work item data found." });
+            }
+        }
+        else
+        {
+            return Ok(new { message = "No PR found against this WorkItem." });
+        }
+    }
+    catch (Exception ex)
+    {
+        // Return internal server error with exception details
+        return StatusCode(500, $"Internal server error: {ex.Message}");
+    }
+}
 
     }
 }
