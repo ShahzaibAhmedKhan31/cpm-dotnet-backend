@@ -49,7 +49,7 @@ namespace WebApplication1.Controllers
             {
                 RedirectUri = "http://localhost:3000/dashboard" // Redirect to React app after login
             }, OpenIdConnectDefaults.AuthenticationScheme); // Use the correct scheme
-        }
+        } 
 
         [HttpGet("logout")]
         public IActionResult Logout()
@@ -76,34 +76,34 @@ namespace WebApplication1.Controllers
 
 
         [HttpGet("user")]
-            public IActionResult GetUser()
+        public IActionResult GetUser()
+        {
+            // Check if the user is authenticated
+            if (!User.Identity.IsAuthenticated)
             {
-                // Check if the user is authenticated
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("User is not authenticated.");
-                }
+                return Unauthorized("User is not authenticated.");
+            }
 
-                // Extract claims from the token
-                var name = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
-                var email = User.Identity?.Name; 
+            // Extract claims from the token
+            var name = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var email = User.Identity?.Name;
 
-                // If the email claim is not found, try another approach (Azure AD often uses "preferred_username")
-                if (string.IsNullOrEmpty(email))
-                {
-                    email = User.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
-                }
+            // If the email claim is not found, try another approach (Azure AD often uses "preferred_username")
+            if (string.IsNullOrEmpty(email))
+            {
+                email = User.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
+            }
 
-                // Return the username and email
-                return Ok(new
-                {
-                    Username = name ?? "Unknown Username",
-                    Email = email ?? "Unknown Email"
-                });
-}
+            // Return the username and email
+            return Ok(new
+            {
+                Username = name ?? "Unknown Username",
+                Email = email ?? "Unknown Email"
+            });
+        }
 
         [HttpGet("tokens")]
-      //  [Authorize] // Ensure the user is authenticated
+        //  [Authorize] // Ensure the user is authenticated
         public async Task<IActionResult> GetTokens()
         {
             // Retrieve tokens from the HttpContext
@@ -149,7 +149,7 @@ namespace WebApplication1.Controllers
             });
         }
 
-            }
+    }
 
 
 }
