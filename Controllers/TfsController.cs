@@ -551,10 +551,10 @@ namespace TfsApi.Controllers
 
         var rawEmail = User.Identity?.Name;
 
-        var email = rawEmail?.Contains("#") == true 
-            ? rawEmail.Split('#').Last() 
-            : rawEmail;
-        // var email = "hamza01961@gmail.com";
+        // var email = rawEmail?.Contains("#") == true 
+        //     ? rawEmail.Split('#').Last() 
+        //     : rawEmail;
+        var email = "hamza01961@gmail.com";
 
         // Construct the query as a JSON string, replacing email and month dynamically
         string query = $@"

@@ -9,7 +9,7 @@ namespace JiraApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    // [Authorize]
     public class JiraController : ControllerBase
     {
         private readonly ElasticSearchService _elasticSearchService;
@@ -530,6 +530,88 @@ namespace JiraApi.Controllers
 
                 // Return the formatted monthly data
                 return Ok(monthlyData);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
+        // POST api/jira/completed_issue_by_id
+        [HttpGet("completed_issues_list")]
+        public async Task<IActionResult> CompletedIssueListApi([FromQuery] int month)
+        {
+
+            // Extract claims from the token
+            var name = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var rawEmail = User.Identity?.Name;
+
+            var email = rawEmail?.Contains("#") == true ? rawEmail.Split('#').Last() : rawEmail;
+
+            
+            string UserName = "Yusma Rasheed";
+            // Ensure the 'id' is provided in the request
+            if (string.IsNullOrEmpty(UserName))
+            {
+                return BadRequest("Username must be provided.");
+            }
+
+            var query = $@"
+                {{
+                    ""query"": {{
+                        ""bool"": {{
+                            ""filter"": [
+                                {{
+                                    ""bool"": {{
+                                        ""should"": [
+                                            {{ ""term"": {{ ""LEVEL_2_ASSIGNEE.keyword"": ""{UserName}"" }} }},
+                                            {{ ""term"": {{ ""LEVEL_3_ASSIGNEE.keyword"": ""{UserName}"" }} }},
+                                            {{ ""term"": {{ ""LEVEL_4_ASSIGNEE.keyword"": ""{UserName}"" }} }},
+                                            {{ ""term"": {{ ""LEVEL_5_ASSIGNEE.keyword"": ""{UserName}"" }} }}
+                                        ],
+                                        ""minimum_should_match"": 1
+                                    }}
+                                }},
+                                {{
+                                    ""range"": {{
+                                        ""TIMESTAMP"": {{
+                                           ""gte"": ""now-{month}M/M"",
+                                           ""lte"": ""now""
+                                        }}
+                                    }}
+                                }}
+                            ]
+                        }}
+                    }}
+                }}";
+
+            try
+            {
+
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
+
+                var IssueList = response
+                .GetProperty("hits")
+                .GetProperty("hits")
+                .EnumerateArray()
+                .Select(hits => new GetCompletedIssueListApiResponse
+                {
+                    Id = hits.GetProperty("_id").GetString(),
+                    IssueKey = hits.GetProperty("_source") .GetProperty("ISSUE_KEY").GetString(),
+                    Date = hits.GetProperty("_source") .GetProperty("TIMESTAMP").GetString(),
+                    Status = hits.GetProperty("_source") .GetProperty("CURRENT_STATUS").GetString(),
+                    Summary = hits.GetProperty("_source") .GetProperty("SUMMARY").GetString(),
+                    Severity = hits.GetProperty("_source") .GetProperty("SEVERITYWISECATEGORY_VALUE").GetString(),
+                    L2_breach = hits.GetProperty("_source").GetProperty("L2_WORKING_ONGOINGCYCLE_BREACHED").ToString(),
+                    L3_breach = hits.GetProperty("_source").GetProperty("L3_WORKING_ONGOINGCYCLE_BREACHED").ToString(),
+                    L4_breach = hits.GetProperty("_source").GetProperty("L4_WORKING_ONGOINGCYCLE_BREACHED").ToString(),
+                    L5_breach = hits.GetProperty("_source").GetProperty("L5_DEVOPS_QA_WORKING_ONGOINGCYCLE_BREACHED").ToString()
+                })
+                .ToList();
+
+                // Return the result
+                return Ok(IssueList);
             }
             catch (Exception ex)
             {

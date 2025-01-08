@@ -7,6 +7,8 @@ using Microsoft.Identity.Web.UI;
 // using Microsoft.Extensions.Hosting;
 // using Microsoft.Extensions.Options;
 // using JiraApi.Services;
+using WebApplication1.dbdata;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +39,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+// Add Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
@@ -83,7 +87,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.Configure<ElasticsearchSettings>(builder.Configuration.GetSection("ElasticsearchSettings"));
 builder.Services.AddSingleton<ElasticSearchService>();
 
-builder.Services.Configure<PostgreSqlSettings>(builder.Configuration.GetSection("ConnectionStrings"));
+
+// builder.Services.Configure<PostgreSqlSettings>(builder.Configuration.GetSection("ConnectionStrings"));
 
 
 
@@ -92,6 +97,9 @@ builder.Services.AddControllersWithViews()
     .AddMicrosoftIdentityUI();
 
 builder.Services.AddHttpClient();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<EmployeesService>();
 
 var app = builder.Build();
 
