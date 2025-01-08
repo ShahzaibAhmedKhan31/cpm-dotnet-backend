@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;  // Add this
 namespace Employees.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     public class EmployeesController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClientFactory;
