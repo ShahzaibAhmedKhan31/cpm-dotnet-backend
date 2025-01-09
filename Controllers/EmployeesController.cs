@@ -27,7 +27,7 @@ namespace Employees.Controllers
         [Route("fetch_subordinates")]
         public async Task<IActionResult> FetchSubOrdinates([FromQuery] string email)
         {
-            var emp = await _empService.fetchSubordinates(email);
+            var emp = await _empService.FetchSubordinates(email);
             
             return Ok(emp);
             
