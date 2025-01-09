@@ -272,102 +272,22 @@ namespace PullRequest.Controllers
             }
         }
 
-[HttpPost("get_pr_details_by_work_item_id")]
-public async Task<IActionResult> GetPrDetailsApi([FromBody] SearchPrDetails request)
-{
-    try
-    {
-        // Get PR ID query based on work item ID
-        var get_pr_id_query = _prService.getPrIdQuery(request.WorkItemId);
-
-        // Execute the Elasticsearch query to get PR ID
-        var response_1 = await _elasticSearchService.ExecuteElasticsearchQueryAsync(get_pr_id_query, _indexName);
-
-        var total_1 = response_1
-            .GetProperty("hits")
-            .GetProperty("total")
-            .GetProperty("value").GetInt32();
-
-        // Check if any hits are returned
-        if (total_1 > 0)
+        // For testing purpose only
+        [HttpPost("get_pr_details_by_work_item_id")]
+        public async Task<IActionResult> GetPrDetailsApi([FromBody] SearchPrDetails request)
         {
-            // Extract the PR data from the first response
-            var workItemPrData = _prService.getWorkItemPrData(response_1);
-
-            // Ensure that workItemPrData contains data before proceeding
-            if (workItemPrData.Any())
-            {
-                // Get the PR details query based on the first item
-                var get_pr_details_query = _prService.GetPrDetailsQuery(workItemPrData[0].PrId);
-
-                // Execute Elasticsearch query for PR details
-                var response_2 = await _elasticSearchService.ExecuteElasticsearchQueryAsync(get_pr_details_query, _indexName);
-
-                var total_2 = response_2
-                    .GetProperty("hits")
-                    .GetProperty("total")
-                    .GetProperty("value").GetInt32();
-
-                // Return the response if PR details are found
-                if (total_2 > 0)
+            try
                 {
-                    var pr_details = _prService.getPrDetails(response_2);
+                    var getPrInsights = await _prService.GetPrInsights(request.WorkItemId);
 
-                    var createPrDetailsResponse = new GetPrDetailsApi 
-                    {
-                        CreatedByEmail = workItemPrData[0].CreatedByEmail,
-                        CreatedDate = workItemPrData[0].CreatedDate,
-                        CreatedByName = workItemPrData[0].CreatedByName,
-                        WorkItemId = workItemPrData[0].WorkItemId,
-                        PrId = workItemPrData[0].PrId,
-                        Title = workItemPrData[0].Title,
-                        TotalNumberOfComments = pr_details.TotalNumberOfComments.ToString(),
-                        LastMergeCommitId = pr_details.LastMergeCommitId,
-                        PrClosedDate = pr_details.PrClosedDate,
-                        PrClosedByName = pr_details.PrClosedByName,
-                        PrFirstCommentDate = pr_details.PrFirstCommentDate,
-                        PrStatus = pr_details.PrStatus
-                    };
+                    return Ok(getPrInsights);
 
-                    return Ok(createPrDetailsResponse);
                 }
-                else
+            catch (Exception ex)
                 {
-
-                    var createPrDetailsResponse = new GetPrDetailsApi 
-                    {
-                        CreatedByEmail = workItemPrData[0].CreatedByEmail,
-                        CreatedDate = workItemPrData[0].CreatedDate,
-                        CreatedByName = workItemPrData[0].CreatedByName,
-                        WorkItemId = workItemPrData[0].WorkItemId,
-                        PrId = workItemPrData[0].PrId,
-                        Title = workItemPrData[0].Title,
-                        TotalNumberOfComments = "",
-                        LastMergeCommitId = "",
-                        PrClosedDate = "",
-                        PrClosedByName = "",
-                        PrFirstCommentDate = "",
-                        PrStatus = "In-Progress"
-                    };
-                    return Ok(createPrDetailsResponse);
+                    // Return internal server error with exception details
+                    return StatusCode(500, $"Internal server error: {ex.Message}");
                 }
-            }
-            else
-            {
-                return Ok(new { message = "No work item data found." });
-            }
         }
-        else
-        {
-            return Ok(new { message = "No PR found against this WorkItem." });
-        }
-    }
-    catch (Exception ex)
-    {
-        // Return internal server error with exception details
-        return StatusCode(500, $"Internal server error: {ex.Message}");
-    }
-}
-
     }
 }
