@@ -17,14 +17,16 @@ namespace TfsApi.Controllers
     public class TfsController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly PrService _prService;
         private readonly ElasticSearchService _elasticSearchService;
         private readonly string _indexName;
 
-        public TfsController(IHttpClientFactory httpClientFactory, ElasticSearchService elasticSearchService, IOptions<IndexesName> settings)
+        public TfsController(IHttpClientFactory httpClientFactory, ElasticSearchService elasticSearchService, IOptions<IndexesName> settings,PrService prService)
         {
             _httpClientFactory = httpClientFactory;
              _elasticSearchService = elasticSearchService;
              _indexName = settings.Value.TFS;
+             _prService = prService;
 
         }
 
@@ -702,15 +704,27 @@ namespace TfsApi.Controllers
                 inProgressDate = hit.GetProperty("_source").GetProperty("ACTIVATED_DATE").GetString()
             }).FirstOrDefault();
 
-            // Combine the results
-            var result = new
+            var getPrInsights = await _prService.GetPrInsights(work_item_id);
+
+            var result = new TaskInsights 
             {
-                task_id = taskDetails?.taskId,
-                bugs_count = severityCountList,
-                created_date = taskDetails?.createdDate,
-                end_date = taskDetails?.endDate,
-                original_estimate = taskDetails?.originalEstimate,
-                inprogress_date = taskDetails?.inProgressDate
+                TaskId = taskDetails?.taskId,
+                BugsCount = severityCountList,
+                CreatedDate = taskDetails?.createdDate,
+                EndDate = taskDetails?.endDate,
+                OriginalEstimate = taskDetails?.originalEstimate,
+                InProgressDate = taskDetails?.inProgressDate,
+                PrCreatedByEmail = getPrInsights.CreatedByEmail,
+                PrCreatedDate = getPrInsights.CreatedDate,
+                PrCreatedByName = getPrInsights.CreatedByName,
+                PrId = getPrInsights.PrId,
+                PrTitle = getPrInsights.Title,
+                PrTotalNumberOfComments = getPrInsights.TotalNumberOfComments,
+                PrLastMergeCommitId = getPrInsights.LastMergeCommitId,
+                PrClosedDate = getPrInsights.PrClosedDate,
+                PrClosedByName = getPrInsights.PrClosedByName,
+                PrFirstCommentDate = getPrInsights.PrFirstCommentDate,
+                PrStatus = getPrInsights.PrStatus  
             };
 
             return Ok(result);
