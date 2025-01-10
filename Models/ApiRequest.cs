@@ -24,4 +24,10 @@ namespace ApiRequest.Models
     {
         public int WorkItemId { get; set; }
     }
+
+    public class SearchJiraIssueDetails
+    {
+        public string? IssueKey { get; set; }
+        public string? DisplayName { get; set; }
+    }
 }

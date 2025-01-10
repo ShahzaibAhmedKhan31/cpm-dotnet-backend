@@ -15,11 +15,14 @@ namespace JiraApi.Controllers
         private readonly ElasticSearchService _elasticSearchService;
         private readonly string _indexName;
 
+        private readonly JiraService _jiraService;
+
         // Constructor to inject ElasticSearchService
-        public JiraController(ElasticSearchService elasticSearchService, IOptions<IndexesName> settings)
+        public JiraController(ElasticSearchService elasticSearchService, IOptions<IndexesName> settings, JiraService jiraService)
         {
             _elasticSearchService = elasticSearchService;
             _indexName = settings.Value.JIRA;
+            _jiraService = jiraService;
             
         }
 
@@ -612,6 +615,21 @@ namespace JiraApi.Controllers
 
                 // Return the result
                 return Ok(IssueList);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // POST api/jira/completed_issue_by_id
+        [HttpPost("getJiraInsights")]
+        public async Task<IActionResult> getJiraInsights([FromBody] SearchJiraIssueDetails request)
+        {
+            try{
+                var getJiraInsights = await _jiraService.getJiraInsights(request.IssueKey, request.DisplayName);
+
+                return Ok(getJiraInsights);
             }
             catch (Exception ex)
             {

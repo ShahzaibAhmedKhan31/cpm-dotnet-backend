@@ -89,6 +89,8 @@ builder.Services.AddSingleton<ElasticSearchService>();
 
 builder.Services.AddSingleton<PrService>();
 
+builder.Services.AddSingleton<JiraService>();
+
 // builder.Services.Configure<PostgreSqlSettings>(builder.Configuration.GetSection("ConnectionStrings"));
 
 

@@ -8,7 +8,7 @@ namespace PullRequest.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    // [Authorize]
     public class PullRequestController : ControllerBase
     {
 
