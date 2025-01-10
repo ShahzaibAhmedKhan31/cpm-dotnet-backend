@@ -617,5 +617,110 @@ namespace TfsApi.Controllers
     
     }
 
+    [HttpGet]
+    [Route("workiteminsights")]
+    public async Task<IActionResult> GetWorkItemInsights([FromQuery] int work_item_id)
+    {
+        string severityQuery = $@"
+        {{
+            ""size"": 0,
+            ""query"": {{
+                ""bool"": {{
+                    ""must"": [
+                        {{
+                            ""term"": {{
+                                ""PARENT_WORKITEMID"": {work_item_id}
+                            }}
+                        }},
+                        {{
+                            ""term"": {{
+                                ""WORK_ITEM_TYPE.keyword"": ""Bug""
+                            }}
+                        }}
+                    ]
+                }}
+            }},
+            ""aggs"": {{
+                ""severity_counts"": {{
+                    ""terms"": {{
+                        ""field"": ""SEVERITY.keyword"",
+                        ""size"": 10
+                    }}
+                }}
+            }}
+        }}";
+
+        Console.WriteLine(work_item_id);
+
+        string taskQuery = $@"
+        {{
+            ""query"": {{
+                ""bool"": {{
+                    ""must"": [
+                        {{
+                            ""term"": {{
+                                ""WORK_ITEM_ID"": {work_item_id}
+                            }}
+                        }},
+                        {{
+                            ""term"": {{
+                                ""STREAM_NAME.keyword"": ""completed_work_items""
+                            }}
+                        }}
+                    ]
+                }}
+            }}
+        }}";
+
+        try
+        {
+            // Query for severity aggregation
+            var severityResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(severityQuery, _indexName);
+
+            // Extract severity counts
+            var severityBuckets = severityResponse.GetProperty("aggregations")
+                                                .GetProperty("severity_counts")
+                                                .GetProperty("buckets");
+
+            var severityCountList = severityBuckets.EnumerateArray().Select(bucket => new
+            {
+                severity = bucket.GetProperty("key").GetString(),
+                count = bucket.GetProperty("doc_count").GetInt32()
+            }).ToList();
+
+            // Query for task details
+            var taskResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(taskQuery, _indexName);
+
+            var hits = taskResponse.GetProperty("hits").GetProperty("hits");
+
+            var taskDetails = hits.EnumerateArray().Select(hit => new
+            {
+                taskId = hit.GetProperty("_source").GetProperty("WORK_ITEM_ID").GetInt32(),
+                originalEstimate = hit.GetProperty("_source").GetProperty("ORIGINAL_ESTIMATE").GetInt32(),
+                createdDate = hit.GetProperty("_source").GetProperty("CREATED_DATE").GetString(),
+                endDate = hit.GetProperty("_source").GetProperty("CLOSED_DATE").GetString(),
+                inProgressDate = hit.GetProperty("_source").GetProperty("ACTIVATED_DATE").GetString()
+            }).FirstOrDefault();
+
+            // Combine the results
+            var result = new
+            {
+                task_id = taskDetails?.taskId,
+                bugs_count = severityCountList,
+                created_date = taskDetails?.createdDate,
+                end_date = taskDetails?.endDate,
+                original_estimate = taskDetails?.originalEstimate,
+                inprogress_date = taskDetails?.inProgressDate
+            };
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Error querying Elasticsearch: {ex.Message}");
+        }
+
+
+    }
     }
 }

@@ -1,86 +1,94 @@
-using System.Text;
-using System.Text.Json;
-using Microsoft.Extensions.Options;
+
 using Microsoft.EntityFrameworkCore;
-using WebApplication1.Models;
 using WebApplication1.dbdata;
 
 public class EmployeesService
 {
     private readonly HttpClient _httpClient;
-    private readonly string _url;
     private readonly ApplicationDbContext _context;
 
-    // Inject HttpClient via constructor
     public EmployeesService(HttpClient httpClient, ApplicationDbContext context)
     {
         _httpClient = httpClient;
         _context = context;
-        
     }
 
+    // Updated SubordinateInfo class to include a nested "teams" property
     public class SubordinateInfo
     {
-        public string EmpId { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
+        
+        public string Level { get; set; }
+        
+        public string deptid { get; set; }
+        public List<SubordinateInfo> Teams { get; set; } = new List<SubordinateInfo>();
     }
 
-    public async Task<Dictionary<string, List<SubordinateInfo>>> FetchSubordinatesHierarchyAsync(string supervisorId)
+    // Recursive function to build the nested structure
+    public async Task<SubordinateInfo> BuildHierarchyAsync(string supervisorId)
     {
-        var result = new Dictionary<string, List<SubordinateInfo>>();
-        var employees = await _context.Employees
-                                    .Where(e => e.supervisorid == supervisorId)
-                                    .ToListAsync();
-        if (!employees.Any())
+        // Get the supervisor's information
+        var supervisor = await _context.Employees
+            .Where(e => e.empid == supervisorId)
+            .Select(e => new SubordinateInfo
+            {
+                Id = int.Parse(e.empid),
+                Name = e.name,
+                Email = e.email,
+                Level = e.level
+            })
+            .FirstOrDefaultAsync();
+
+        if (supervisor == null)
         {
-            return result;
+            return null;
         }
 
-        List<SubordinateInfo> subordinateInfos = new List<SubordinateInfo>();
-        foreach (var employee in employees)
-        {
-            subordinateInfos.Add(new SubordinateInfo
+        // Get the supervisor's direct subordinates
+        var subordinates = await _context.Employees
+            .Where(e => e.supervisorid == supervisorId)
+            .Select(e => new SubordinateInfo
             {
-                EmpId = employee.empid.ToString(),
-                Name = employee.name,
-                Email = employee.email
-            });
+                Id = int.Parse(e.empid),
+                Name = e.name,
+                Email = e.email,
+                Level=e.level,
+                deptid=e.deptid
+            })
+            .ToListAsync();
 
-            var subordinates = await FetchSubordinatesHierarchyAsync(employee.empid.ToString());
-            
-            foreach (var kvp in subordinates)
+        // Recursively build the team structure for each subordinate
+        foreach (var subordinate in subordinates)
+        {
+            var subordinateHierarchy = await BuildHierarchyAsync(subordinate.Id.ToString());
+            if (subordinateHierarchy != null)
             {
-                if (!result.ContainsKey(kvp.Key))
-                {
-                    result[kvp.Key] = new List<SubordinateInfo>();
-                }
-                result[kvp.Key].AddRange(kvp.Value);
+                subordinate.Teams = subordinateHierarchy.Teams;
             }
+            supervisor.Teams.Add(subordinate);
         }
 
-        result[supervisorId] = subordinateInfos;
-        return result;
-
+        return supervisor;
     }
 
+    // Public function to fetch the hierarchy starting from an email
+    public async Task<SubordinateInfo> FetchSubordinates(string email)
+    {
+        // Get the employee ID for the given email
+        var supervisorId = await _context.Employees
+            .Where(e => e.email == email)
+            .Select(e => e.empid)
+            .FirstOrDefaultAsync();
 
-    public async Task<Dictionary<string, List<SubordinateInfo>>> fetchSubordinates(string email){
-        
-        // Fetch the TaskScore for the given TaskId
-        Console.WriteLine(email);
+        if (string.IsNullOrEmpty(supervisorId))
+        {
+            return null; // Supervisor not found
+        }
 
-        var employeeId = await _context.Employees
-                                    .Where(e => e.email == email)
-                                    .Select(e => e.empid)
-                                    .FirstOrDefaultAsync();
-
-        Dictionary<string, List<SubordinateInfo>> subordinatesHierarchy = await FetchSubordinatesHierarchyAsync(employeeId);
-        
-        
-        return subordinatesHierarchy;
-
+        // Build and return the hierarchy
+        var hierarchy = await BuildHierarchyAsync(supervisorId);
+        return hierarchy;
     }
-
 }
-
