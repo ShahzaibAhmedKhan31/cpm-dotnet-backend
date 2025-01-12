@@ -1,11 +1,5 @@
 // Controllers/ElasticSearchController.cs
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using System;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using ApiRequest.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
@@ -16,17 +10,15 @@ namespace TfsApi.Controllers
     // [Authorize]
     public class TfsController : ControllerBase
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly PrService _prService;
+        private readonly TfsService _tfsService;
         private readonly ElasticSearchService _elasticSearchService;
         private readonly string _indexName;
 
-        public TfsController(IHttpClientFactory httpClientFactory, ElasticSearchService elasticSearchService, IOptions<IndexesName> settings,PrService prService)
+        public TfsController(ElasticSearchService elasticSearchService, IOptions<IndexesName> settings, TfsService tfsService)
         {
-            _httpClientFactory = httpClientFactory;
              _elasticSearchService = elasticSearchService;
              _indexName = settings.Value.TFS;
-             _prService = prService;
+             _tfsService = tfsService;
 
         }
 
@@ -623,118 +615,15 @@ namespace TfsApi.Controllers
     [Route("workiteminsights")]
     public async Task<IActionResult> GetWorkItemInsights([FromQuery] int work_item_id)
     {
-        string severityQuery = $@"
-        {{
-            ""size"": 0,
-            ""query"": {{
-                ""bool"": {{
-                    ""must"": [
-                        {{
-                            ""term"": {{
-                                ""PARENT_WORKITEMID"": {work_item_id}
-                            }}
-                        }},
-                        {{
-                            ""term"": {{
-                                ""WORK_ITEM_TYPE.keyword"": ""Bug""
-                            }}
-                        }}
-                    ]
-                }}
-            }},
-            ""aggs"": {{
-                ""severity_counts"": {{
-                    ""terms"": {{
-                        ""field"": ""SEVERITY.keyword"",
-                        ""size"": 10
-                    }}
-                }}
-            }}
-        }}";
+        try{
+            var response = await _tfsService.TfsInsights(work_item_id);
 
-        Console.WriteLine(work_item_id);
-
-        string taskQuery = $@"
-        {{
-            ""query"": {{
-                ""bool"": {{
-                    ""must"": [
-                        {{
-                            ""term"": {{
-                                ""WORK_ITEM_ID"": {work_item_id}
-                            }}
-                        }},
-                        {{
-                            ""term"": {{
-                                ""STREAM_NAME.keyword"": ""completed_work_items""
-                            }}
-                        }}
-                    ]
-                }}
-            }}
-        }}";
-
-        try
-        {
-            // Query for severity aggregation
-            var severityResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(severityQuery, _indexName);
-
-            // Extract severity counts
-            var severityBuckets = severityResponse.GetProperty("aggregations")
-                                                .GetProperty("severity_counts")
-                                                .GetProperty("buckets");
-
-            var severityCountList = severityBuckets.EnumerateArray().Select(bucket => new
-            {
-                severity = bucket.GetProperty("key").GetString(),
-                count = bucket.GetProperty("doc_count").GetInt32()
-            }).ToList();
-
-            // Query for task details
-            var taskResponse = await _elasticSearchService.ExecuteElasticsearchQueryAsync(taskQuery, _indexName);
-
-            var hits = taskResponse.GetProperty("hits").GetProperty("hits");
-
-            var taskDetails = hits.EnumerateArray().Select(hit => new
-            {
-                taskId = hit.GetProperty("_source").GetProperty("WORK_ITEM_ID").GetInt32(),
-                originalEstimate = hit.GetProperty("_source").GetProperty("ORIGINAL_ESTIMATE").GetInt32(),
-                createdDate = hit.GetProperty("_source").GetProperty("CREATED_DATE").GetString(),
-                endDate = hit.GetProperty("_source").GetProperty("CLOSED_DATE").GetString(),
-                inProgressDate = hit.GetProperty("_source").GetProperty("ACTIVATED_DATE").GetString()
-            }).FirstOrDefault();
-
-            var getPrInsights = await _prService.GetPrInsights(work_item_id);
-
-            var result = new TaskInsights 
-            {
-                TaskId = taskDetails?.taskId,
-                BugsCount = severityCountList,
-                CreatedDate = taskDetails?.createdDate,
-                EndDate = taskDetails?.endDate,
-                OriginalEstimate = taskDetails?.originalEstimate,
-                InProgressDate = taskDetails?.inProgressDate,
-                PrCreatedByEmail = getPrInsights.CreatedByEmail,
-                PrCreatedDate = getPrInsights.CreatedDate,
-                PrCreatedByName = getPrInsights.CreatedByName,
-                PrId = getPrInsights.PrId,
-                PrTitle = getPrInsights.Title,
-                PrTotalNumberOfComments = getPrInsights.TotalNumberOfComments,
-                PrLastMergeCommitId = getPrInsights.LastMergeCommitId,
-                PrClosedDate = getPrInsights.PrClosedDate,
-                PrClosedByName = getPrInsights.PrClosedByName,
-                PrFirstCommentDate = getPrInsights.PrFirstCommentDate,
-                PrStatus = getPrInsights.PrStatus  
-            };
-
-            return Ok(result);
+            return Ok(response);
         }
         catch (Exception ex)
         {
-            return BadRequest($"Error querying Elasticsearch: {ex.Message}");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
-
-
     }
     }
 }

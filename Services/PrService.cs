@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using PullRequest.Models;
 public class PrService
 {
     private readonly ElasticSearchService _elasticSearchService;
@@ -112,6 +113,106 @@ public class PrService
             Console.WriteLine( $"Internal server error: {ex.Message}");
             return new GetPrDetailsApi {}; // Return empty array in case of error
         }
+    }
+    
+    public async Task<List<GetPrCountByMonthApiResponse>> GetPrCountByMonth(string date, string username)
+    {
+        var query = getPrCountByMonthQuery(date, username);
+
+        try
+        {
+            // Execute Elasticsearch query
+            var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
+
+            // Parse the response to extract the pr_count by month
+            var monthlyData = response
+                .GetProperty("aggregations")
+                .GetProperty("pr_count_by_month")
+                .GetProperty("buckets")
+                .EnumerateArray()
+                .Select(bucket => new GetPrCountByMonthApiResponse
+                {
+                    Month = bucket.GetProperty("key_as_string").GetString(),
+                    PrCount = bucket.GetProperty("doc_count").GetInt32()
+                })
+                .ToList();
+
+            return monthlyData;
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine( $"Internal server error: {ex.Message}");
+            return new List<GetPrCountByMonthApiResponse>(); // Return empty array in case of error
+        }
+    }
+    
+    public async Task<List<GetPrWithCommentsCountApiResponse>> getPrWithCommentsCount(string date, string username)
+    {
+        var query = GetPrWithCommentsCountQuery(date, username);
+
+         try
+            {
+
+                // Execute Elasticsearch query
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
+
+                Console.WriteLine("Elastic Search response: ", response);
+
+                // Parse the response to extract PR details
+                var prDetails = response
+                    .GetProperty("hits")
+                    .GetProperty("hits")
+                    .EnumerateArray()
+                    .Select(hit => new GetPrWithCommentsCountApiResponse
+                    {
+                        Id = hit.GetProperty("_source").GetProperty("PR_ID").GetInt32(),
+                        PrCommentsCount = hit.GetProperty("_source").GetProperty("TOTAL_NUMBER_OF_COMMENTS").GetInt32(),
+                        PrTitle = hit.GetProperty("_source").GetProperty("PR_TITLE").GetString()
+                    })
+                    .ToList();
+
+                Console.WriteLine(prDetails);
+                // Return the formatted response
+                return prDetails;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine( $"Internal server error: {ex.Message}");
+                return new List<GetPrWithCommentsCountApiResponse>(); // Return empty array in case of error
+            }
+    }
+
+    public async Task<List<GetReviewedPrCountApiResponse>> getReviewedPrCount(string date, string username)
+    {
+        var query = GetReviewedPrCountQuery(date, username);
+
+        try
+            {
+
+                // Execute Elasticsearch query
+                var response = await _elasticSearchService.ExecuteElasticsearchQueryAsync(query, _indexName);
+
+                // Parse the response to extract the pr_count by month
+                var monthlyData = response
+                    .GetProperty("aggregations")
+                    .GetProperty("reviewed_pr_count_by_month")
+                    .GetProperty("buckets")
+                    .EnumerateArray()
+                    .Select(bucket => new GetReviewedPrCountApiResponse
+                    {
+                        Month = bucket.GetProperty("key_as_string").GetString(),
+                        PrReviewCount = bucket.GetProperty("doc_count").GetInt32()
+                    })
+                    .ToList();
+
+                // Return the formatted response
+                return monthlyData;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine( $"Internal server error: {ex.Message}");
+                return new List<GetReviewedPrCountApiResponse>(); // Return empty array in case of error
+            }
     }
     public string getPrIdQuery(int workItemId)
     {
@@ -242,9 +343,6 @@ public class PrService
         }
     }
 
-
-
-
     public List<Dictionary<string, string>> FilterPrDetails(JsonElement jsonResponse)
     {
         Console.WriteLine("in FilterPrDetails Service Functions");
@@ -279,6 +377,137 @@ public class PrService
 
         return filteredData;
         }
+    
+    private static string getPrCountByMonthQuery(string date, string username)
+    {
+        var query = $@"
+            {{
+                ""query"": {{
+                    ""bool"": {{
+                        ""must"": [
+                            {{
+                                ""term"": {{
+                                    ""TABLE_NAME.keyword"": ""PR_COMPLETED_STREAM""
+                                }}
+                            }},
+                            {{
+                                ""term"": {{
+                                    ""PR_STATUS.keyword"": ""completed""
+                                }}
+                            }},
+                            {{
+                                ""term"": {{
+                                    ""CREATED_BY_NAME.keyword"": ""{username}""
+                                }}
+                            }}
+                        ],
+                        ""filter"": [
+                            {{
+                                ""range"": {{
+                                    ""PR_CLOSE_DATE"": {{
+                                        ""gte"": ""{date}""
+                                    }}
+                                }}
+                            }}
+                        ]
+                    }}
+                }},
+                ""aggs"": {{
+                    ""pr_count_by_month"": {{
+                        ""date_histogram"": {{
+                            ""field"": ""PR_CLOSE_DATE"",
+                            ""calendar_interval"": ""month"",
+                            ""format"": ""yyyy-MM""
+                        }}
+                    }}
+                }},
+                ""size"": 0
+            }}";
+
+        return query;
+    }
+    
+    private static string GetPrWithCommentsCountQuery(string date, string username)
+    {
+        var query = $@"
+            {{
+            ""_source"": [""PR_ID"", ""TOTAL_NUMBER_OF_COMMENTS"", ""PR_TITLE""],
+            ""query"": {{
+                ""bool"": {{
+                ""must"": [
+                    {{
+                        ""term"": {{
+                            ""TABLE_NAME.keyword"": ""PR_COMPLETED_STREAM""
+                        }}
+                    }},
+                    {{
+                        ""term"": {{
+                            ""CREATED_BY_NAME.keyword"": ""{username}""
+                        }}
+                    }}
+                ],
+                ""filter"": [
+                    {{
+                    ""range"": {{
+                        ""PR_CREATION_DATE"": {{
+                        ""gte"": ""{date}"",
+                        ""lte"": ""now/M""
+                        }}
+                    }}
+                    }}
+                ]
+                }}
+            }},
+            ""size"": 100
+            }}";
+        
+        return query;
+    }
+
+    private static string GetReviewedPrCountQuery(string date, string username)
+    {
+        var query = $@"
+            {{
+            ""query"": {{
+                ""bool"": {{
+                ""must"": [
+                    {{
+                        ""term"": {{
+                            ""TABLE_NAME.keyword"": ""PR_COMPLETED_STREAM""
+                        }}
+                    }},
+                    {{
+                        ""term"": {{
+                            ""CLOSED_BY_NAME.keyword"": ""{username}""
+                        }}
+                    }}
+                ],
+                ""filter"": [
+                    {{
+                    ""range"": {{
+                        ""PR_CLOSE_DATE"": {{
+                        ""gte"": ""{date}"",
+                        ""lte"": ""now/M""
+                        }}
+                    }}
+                    }}
+                ]
+                }}
+            }},
+            ""aggs"": {{
+                ""reviewed_pr_count_by_month"": {{
+                ""date_histogram"": {{
+                    ""field"": ""PR_CLOSE_DATE"",
+                    ""calendar_interval"": ""month"",
+                    ""format"": ""yyyy-MM""
+                }}
+                }}
+            }},
+            ""size"": 0
+            }}";
+        
+        return query;
+    }
     }
 
 // Models To be used by prServices
@@ -304,7 +533,7 @@ public class PrDetails
 
 }
 
-    public class GetPrDetailsApi
+public class GetPrDetailsApi
     {
     public string? CreatedByEmail { get; set; }
     public string? CreatedDate { get; set; }

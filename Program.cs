@@ -87,9 +87,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.Configure<ElasticsearchSettings>(builder.Configuration.GetSection("ElasticsearchSettings"));
 builder.Services.AddSingleton<ElasticSearchService>();
 
+builder.Services.AddSingleton<TfsService>();
+
 builder.Services.AddSingleton<PrService>();
 
 builder.Services.AddSingleton<JiraService>();
+
 
 // builder.Services.Configure<PostgreSqlSettings>(builder.Configuration.GetSection("ConnectionStrings"));
 
