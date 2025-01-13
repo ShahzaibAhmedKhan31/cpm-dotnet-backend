@@ -6,7 +6,7 @@ namespace PullRequest.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize]
+    [Authorize]
     public class PullRequestController : ControllerBase
     {
 
@@ -36,7 +36,7 @@ namespace PullRequest.Controllers
             try
             {   
                 // GetPrCountByMonth
-                var response = await _prService.GetPrCountByMonth(request.Date, request.UserName);
+                var response = await _prService.GetPrCountByMonth(request.Date, name);
 
                 // Return the formatted response
                 return Ok(response);
@@ -69,7 +69,7 @@ namespace PullRequest.Controllers
             try
             {
                 // getPrWithCommentsCount
-                var response = await _prService.getPrWithCommentsCount(request.Date, request.UserName);
+                var response = await _prService.getPrWithCommentsCount(request.Date, name);
 
                 return Ok(response);
             }
@@ -98,7 +98,7 @@ namespace PullRequest.Controllers
             try
             {
                 // getReviewedPrCount
-                var response = await _prService.getReviewedPrCount(request.Date, request.UserName);
+                var response = await _prService.getReviewedPrCount(request.Date, name);
 
                 return Ok(response);
             }

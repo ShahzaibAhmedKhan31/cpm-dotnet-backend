@@ -7,7 +7,7 @@ namespace JiraApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize]
+    [Authorize]
     public class JiraController : ControllerBase
     {
 
