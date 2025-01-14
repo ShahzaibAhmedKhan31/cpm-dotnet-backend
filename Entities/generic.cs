@@ -18,9 +18,11 @@ namespace WebApplication1.Models
     public class Dept
     {
         [Key]
-        public string DeptId { get; set; }
-        public string HodId { get; set; }
-        public string TenantId { get; set; }
+        public int dept_id { get; set; }
+        // public string HodId { get; set; }
+        // public string TenantId { get; set; }
+
+        public string? dept_name { get; set; }
 
         // public Tenant Tenant { get; set; }
         // public ICollection<Employee> Employees { get; set; }

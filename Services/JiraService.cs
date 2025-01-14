@@ -73,8 +73,13 @@ public class JiraService
             var total_1 = getjiraissueinfo.GetProperty("hits") .GetProperty("total") .GetProperty("value").GetInt32();
 
              if(total_1 > 0){
-                var filteredResponse = FilterResponse(getjiraissueinfo,displayName);
-                return filteredResponse;
+                var filteredResponse = FilterResponse(getjiraissueinfo, displayName);
+
+                // Add TaskType key with hardcoded value "JIRA"
+                var filteredResponseDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(filteredResponse.GetRawText());
+                filteredResponseDict["TASKTYPE"] = JsonDocument.Parse("\"JIRA\"").RootElement;
+
+                return JsonSerializer.SerializeToElement(filteredResponseDict);
              }
              else{
                 var json = JsonDocument.Parse("{\"message\": \"No issue found\"}");

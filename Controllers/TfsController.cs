@@ -154,16 +154,16 @@ namespace TfsApi.Controllers
     [HttpGet]
     [Route("workiteminsights")]
     public async Task<IActionResult> GetWorkItemInsights([FromQuery] int work_item_id)
-    {
-        try{
-            var response = await _tfsService.TfsInsights(work_item_id);
-
-            return Ok(response);
-        }
-        catch (Exception ex)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            try{
+                var response = await _tfsService.TfsInsights(work_item_id);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
-    }
     }
 }
