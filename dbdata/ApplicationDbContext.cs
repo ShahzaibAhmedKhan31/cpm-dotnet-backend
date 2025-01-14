@@ -22,17 +22,18 @@ public class ApplicationDbContext : DbContext
 
    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-   modelBuilder.Entity<TaskScore>().ToTable("taskscores");
+    modelBuilder.Entity<TaskScore>().ToTable("taskscores");
     modelBuilder.Entity<Employee>().ToTable("employee");
+    modelBuilder.Entity<Dept>().ToTable("departments");
 
     // Set ScoreId as Primary Key
     modelBuilder.Entity<TaskScore>().HasKey(ts => ts.scoreid);
-        modelBuilder.Entity<Dept>().HasKey(d => d.DeptId); // Set DeptId as Primary Key
-        modelBuilder.Entity<Employee>().HasKey(e => e.empid); // Set EmpId as Primary Key
-        modelBuilder.Entity<Role>().HasKey(r => r.RoleId); // Set RoleId as Primary Key
-        modelBuilder.Entity<Kra>().HasKey(k => k.KraId); // Set KraId as Primary Key
-        modelBuilder.Entity<MonthlyTask>().HasKey(mt => mt.TaskId); // Set TaskId as Primary Key
-        modelBuilder.Entity<CompetencyScore>().HasKey(cs => cs.CompScoreId); // Set CompScoreId as Primary Key
+    modelBuilder.Entity<Dept>().HasKey(d => d.dept_id); // Set DeptId as Primary Key
+    modelBuilder.Entity<Employee>().HasKey(e => e.empid); // Set EmpId as Primary Key
+    modelBuilder.Entity<Role>().HasKey(r => r.RoleId); // Set RoleId as Primary Key
+    modelBuilder.Entity<Kra>().HasKey(k => k.KraId); // Set KraId as Primary Key
+    modelBuilder.Entity<MonthlyTask>().HasKey(mt => mt.TaskId); // Set TaskId as Primary Key
+    modelBuilder.Entity<CompetencyScore>().HasKey(cs => cs.CompScoreId); // Set CompScoreId as Primary Key
 
         // Additional relationship mappings can be added here if needed
         base.OnModelCreating(modelBuilder);

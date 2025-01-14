@@ -932,7 +932,8 @@ public class TfsService
                 PrClosedDate = getPrInsights.PrClosedDate,
                 PrClosedByName = getPrInsights.PrClosedByName,
                 PrFirstCommentDate = getPrInsights.PrFirstCommentDate,
-                PrStatus = getPrInsights.PrStatus
+                PrStatus = getPrInsights.PrStatus,
+                TaskType = "TFS"
             };
 
             return result;

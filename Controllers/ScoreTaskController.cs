@@ -1,0 +1,36 @@
+// Controllers/ElasticSearchController.cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Text.Json;
+
+namespace ScoreTaskApi.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    // [Authorize]
+    public class ScoreTaskController : ControllerBase
+    {
+        private readonly ScoretaskService _scoretaskService;
+
+        public ScoreTaskController(ScoretaskService scoretaskService)
+        {
+             _scoretaskService = scoretaskService;
+
+        }
+
+        [HttpPost]
+        [Route("getTaskScore")]
+        public async Task<IActionResult> GetTaskScore([FromBody] JsonElement request)
+            {
+                try{
+                    var response = _scoretaskService.GetTaskScore(request);
+
+                    return Ok(response);
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, $"Internal server error: {ex.Message}");
+                }
+            }
+    }
+}

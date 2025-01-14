@@ -21,6 +21,8 @@ namespace TaskInsightsModel.Models
         public string? PrFirstCommentDate { get; set; }
         public string? PrStatus { get; set; }
 
+        public string? TaskType { get; set; }
+
     }
 
 

@@ -39,6 +39,13 @@ namespace WebApplication1.Controllers
     [Route("auth")]
     public class AuthController : Controller
     {
+        private readonly EmployeesService _empService;
+
+        public AuthController(EmployeesService empService)
+        {
+            _empService = empService;
+        }
+
         [HttpGet("login")]
         public IActionResult Login()
         {
@@ -76,7 +83,7 @@ namespace WebApplication1.Controllers
 
 
         [HttpGet("user")]
-        public IActionResult GetUser()
+        public async Task<ActionResult> GetUser()
         {
             // Check if the user is authenticated
             if (!User.Identity.IsAuthenticated)
@@ -94,11 +101,18 @@ namespace WebApplication1.Controllers
                 email = User.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
             }
 
+            // Get Employee Details
+            var emp = await _empService.FetchEmployeeDetails(email);
+
+
             // Return the username and email
             return Ok(new
             {
                 Username = name ?? "Unknown Username",
-                Email = email ?? "Unknown Email"
+                Email = email ?? "Unknown Email",
+                Employee = emp.empid,
+                Level = emp.level,
+                DeptId = emp.deptid
             });
         }
 

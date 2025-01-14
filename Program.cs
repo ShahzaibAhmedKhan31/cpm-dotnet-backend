@@ -93,6 +93,8 @@ builder.Services.AddSingleton<PrService>();
 
 builder.Services.AddSingleton<JiraService>();
 
+builder.Services.AddScoped<ScoretaskService>();
+
 
 // builder.Services.Configure<PostgreSqlSettings>(builder.Configuration.GetSection("ConnectionStrings"));
 

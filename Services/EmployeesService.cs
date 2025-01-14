@@ -1,6 +1,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.dbdata;
+using EmployeeService.Models;
 
 public class EmployeesService
 {
@@ -90,5 +91,40 @@ public class EmployeesService
         // Build and return the hierarchy
         var hierarchy = await BuildHierarchyAsync(supervisorId);
         return hierarchy;
+    }
+
+
+    public async Task<employeeDetails> FetchEmployeeDetails(string email)
+    {
+        var employee = await _context.Employees
+            .Where(e => e.email == email)
+            .FirstOrDefaultAsync();
+
+        if (employee != null)
+        {
+            var response = new employeeDetails{
+                empid = employee.empid,
+                name = employee.name,
+                email = employee.email,
+                level = employee.level,
+                deptid = employee.deptid
+            };
+
+            return response;
+        }
+        else
+        {
+            return new employeeDetails();
+        }
+    }
+
+    public async Task<int?> getDepartmentId(string department_name)
+    {
+        var id = await _context.Departments
+            .Where(d => d.dept_name == department_name)
+            .Select(d => d.dept_id)
+            .FirstOrDefaultAsync();
+
+        return id;
     }
 }

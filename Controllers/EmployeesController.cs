@@ -23,6 +23,28 @@ namespace Employees.Controllers
             
         }
 
+        // [HttpGet]
+        // [Route("fetch_employee_details")]
+        // public async Task<IActionResult> FetchEmployeeDetails([FromQuery] string email)
+        // {
+        //     var emp = await _empService.FetchEmployeeDetails(email);
+            
+        //     return Ok(emp);
+    
+        // }
+        
+        // [HttpGet]
+        // [Route("get_department_id")]
+        // public async Task<IActionResult> getId([FromQuery] string department_name)
+        // {
+        //     var id = await _empService.getDepartmentId(department_name);
+        //     // var emp = await _empService.FetchEmployeeDetails(email);
+            
+        //     return Ok(id);
+    
+        // }
+        
+
 
 
     }
