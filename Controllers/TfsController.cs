@@ -6,7 +6,7 @@ namespace TfsApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    // [Authorize]
     public class TfsController : ControllerBase
     {
         private readonly TfsService _tfsService;
