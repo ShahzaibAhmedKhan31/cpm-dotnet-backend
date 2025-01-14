@@ -3,7 +3,7 @@
 ## Jira Completed + breached Issues of last 3 months
 
 ```
-GET jira_completed_issues_new/_search
+GET jira_completed_issues/_search
 {
   "query": {
     "bool": {

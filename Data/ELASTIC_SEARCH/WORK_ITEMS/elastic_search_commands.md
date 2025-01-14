@@ -224,7 +224,6 @@ curl -X POST "http://172.174.172.29:9200/tfs_index/_search?pretty" -H 'Content-T
   }
 }'
 
-
 ## task completion rate
 curl -X POST "http://localhost:9200/tfs_index/_search?pretty" -H 'Content-Type: application/json' -d '{
   "size": 0,
