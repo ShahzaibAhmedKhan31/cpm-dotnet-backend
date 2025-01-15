@@ -32,5 +32,22 @@ namespace ScoreTaskApi.Controllers
                     return StatusCode(500, $"Internal server error: {ex.Message}");
                 }
             }
+        
+        [HttpPost]
+        [Route("updateTask")]
+
+        public async Task<IActionResult> UpdateTask([FromBody] JsonElement request, [FromQuery] string taskId)
+        {
+            try
+            {
+                var response = await _scoretaskService.UpdateTask(request, taskId);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
     }
 }

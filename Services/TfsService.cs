@@ -917,6 +917,7 @@ public class TfsService
             var result = new TaskInsights
             {
                 TaskId = taskDetails.TaskId,
+                Title = taskDetails.Title,
                 BugsCount = severityCountList,
                 CreatedDate = taskDetails.CreatedDate,
                 EndDate = taskDetails.EndDate,
@@ -1028,6 +1029,7 @@ public class TfsService
         var taskDetails = hits.EnumerateArray().Select(hit => new WorkitemInsights
         {
             TaskId = hit.GetProperty("_source").GetProperty("WORK_ITEM_ID").GetInt32(),
+            Title = hit.GetProperty("_source").GetProperty("TITLE").GetString(),
             OriginalEstimate = hit.GetProperty("_source").GetProperty("ORIGINAL_ESTIMATE").GetInt32(),
             CreatedDate = hit.GetProperty("_source").GetProperty("CREATED_DATE").GetString(),
             EndDate = hit.GetProperty("_source").GetProperty("CLOSED_DATE").GetString(),

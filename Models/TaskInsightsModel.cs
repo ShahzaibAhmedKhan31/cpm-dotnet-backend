@@ -4,6 +4,8 @@ namespace TaskInsightsModel.Models
     public class TaskInsights
     {
         public int? TaskId { get; set; }
+
+        public string? Title {get; set;}
         public int? OriginalEstimate { get; set; }
         public string? CreatedDate { get; set; }
         public object? BugsCount{get; set;}
@@ -29,6 +31,8 @@ namespace TaskInsightsModel.Models
     public class WorkitemInsights
     {
         public int? TaskId { get; set; }
+
+        public string? Title {get; set;} 
         public int? OriginalEstimate { get; set; }
         public string? CreatedDate { get; set; }
         public object? BugsCount{get; set;}
