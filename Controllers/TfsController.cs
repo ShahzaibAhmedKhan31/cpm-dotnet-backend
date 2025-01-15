@@ -153,6 +153,26 @@ namespace TfsApi.Controllers
 
         }
 
+        [HttpPost]  // Change to POST method
+        [Route("postworkitems")]
+        public async Task<IActionResult> GetWorkItems([FromBody] WorkItemsRequest request)
+        {
+            try
+            {
+                // You can access the email and month directly from the request body
+                var email = request.Email;
+                var month = request.Month;
+
+                var response = await _tfsService.getWorkItems("shahzaib_pakistan@hotmail.com", month);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                // Log the error and return a bad request response
+                return BadRequest($"Error querying Elasticsearch: {ex.Message}");
+            }
+        }
         [HttpGet]
         [Route("workiteminsights")]
         public async Task<IActionResult> GetWorkItemInsights([FromQuery] int work_item_id)
@@ -186,7 +206,7 @@ namespace TfsApi.Controllers
                 return BadRequest($"Error querying Elasticsearch: {ex.Message}");
             }
         }
-      
+
         [HttpPost]
         [Route("bug_count_ByEmail")]
         public async Task<IActionResult> BugCountByEmail([FromBody] TaskCountRequest request)
@@ -194,7 +214,7 @@ namespace TfsApi.Controllers
 
             try
             {
-                var response = await _tfsService.GetWorkItemCountByEmail(request.EmailList, request.Month,"Bug");
+                var response = await _tfsService.GetWorkItemCountByEmail(request.EmailList, request.Month, "Bug");
 
 
                 return Ok(response);
@@ -238,6 +258,11 @@ namespace TfsApi.Controllers
     public class TaskCountRequest
     {
         public List<string> EmailList { get; set; }
+        public int Month { get; set; }
+    }
+    public class WorkItemsRequest
+    {
+        public string Email { get; set; }
         public int Month { get; set; }
     }
 }
