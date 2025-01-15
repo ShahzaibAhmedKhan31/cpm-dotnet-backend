@@ -35,5 +35,24 @@ public class ElasticSearchService
         return JsonSerializer.Deserialize<JsonElement>(responseContent);
     }
 
+
+     public async Task<JsonElement> UpdateElasticSearchDocumentQueryAsync(string query, string index, string task_id)
+    {
+        var uri = $"{_elasticsearchUrl}/{index}/_update/{task_id}/elasticsearch";
+        
+        var httpContent = new StringContent(query, Encoding.UTF8, "application/json");
+
+        var httpResponse = await _httpClient.PostAsync(uri, httpContent);
+
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            var error = await httpResponse.Content.ReadAsStringAsync();
+            throw new Exception($"Error from Elasticsearch: {error}");
+        }
+
+        var responseContent = await httpResponse.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<JsonElement>(responseContent);
+    }
+
 }
 
