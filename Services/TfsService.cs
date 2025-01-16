@@ -678,6 +678,7 @@ public class TfsService
 
     private static string getCompeletionRateByEmailQuery(List<string> emails, int months)
     {
+        Console.WriteLine($"skljdlkfjlsdk ${emails[0]}");
         // Construct the "wildcard" conditions for multiple emails dynamically
         var currentAssigneeEmailConditions = string.Join(",", emails.Select(email => $@"
     {{
