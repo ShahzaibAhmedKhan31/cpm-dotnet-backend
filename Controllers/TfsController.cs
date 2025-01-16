@@ -33,7 +33,7 @@ namespace TfsApi.Controllers
 
             try
             {
-                var response = await _tfsService.getBugsCount(email, request.Months);
+                var response = await _tfsService.getBugsCount(username, request.Months);
 
                 // Return the processed buckets
                 return Ok(response);
@@ -50,7 +50,7 @@ namespace TfsApi.Controllers
         [Route("task_count")]
         public async Task<IActionResult> TaskCount([FromBody] SearchRequest request)
         {
-
+            var username = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
             var rawEmail = User.Identity?.Name;
 
             var email = rawEmail?.Contains("#") == true
@@ -59,7 +59,7 @@ namespace TfsApi.Controllers
 
             try
             {
-                var response = await _tfsService.getTaskCount(email, request.Months);
+                var response = await _tfsService.getTaskCount(username, request.Months);
 
                 return Ok(response);
             }
@@ -77,6 +77,7 @@ namespace TfsApi.Controllers
         [Route("task_completion_rate")]
         public async Task<IActionResult> TaskCompletionRate([FromBody] SearchRequest request)
         {
+            var username = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
 
             var rawEmail = User.Identity?.Name;
 
@@ -84,10 +85,11 @@ namespace TfsApi.Controllers
                 ? rawEmail.Split('#').Last()
                 : rawEmail;
 
+            Console.WriteLine($"task_completion_rate {email}");
 
             try
             {
-                var response = await _tfsService.getTaskCompletionRate(email, request.Months);
+                var response = await _tfsService.getTaskCompletionRate(username, request.Months);
 
                 return Ok(response);
             }
@@ -102,6 +104,7 @@ namespace TfsApi.Controllers
         [Route("workitem_bug_count")]
         public async Task<IActionResult> WorkItemBugCount([FromBody] SearchRequest request)
         {
+            var username = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
 
             var rawEmail = User.Identity?.Name;
 
@@ -111,7 +114,7 @@ namespace TfsApi.Controllers
 
             try
             {
-                var response = await _tfsService.getWorkItemBugCount(email, request.Months);
+                var response = await _tfsService.getWorkItemBugCount(username, request.Months);
 
                 return Ok(response);
             }
@@ -128,6 +131,7 @@ namespace TfsApi.Controllers
         public async Task<IActionResult> GetWorkItems([FromQuery] int month)
         {
 
+            var username = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
 
             var rawEmail = User.Identity?.Name;
 
@@ -135,13 +139,15 @@ namespace TfsApi.Controllers
                 ? rawEmail.Split('#').Last()
                 : rawEmail;
 
+            Console.WriteLine($"workitems ${username} ${email}");    
+
             // var email = "hamza01961@gmail.com";
 
 
             try
             {
 
-                var response = await _tfsService.getWorkItems(email, month);
+                var response = await _tfsService.getWorkItems(username, month);
 
                 return Ok(response);
             }
