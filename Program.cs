@@ -12,6 +12,8 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options => {     options.ListenAnyIP(5001, listenOptions =>     {        listenOptions.UseHttps("localhost.pfx", ""); }); });
+
 // Add services to the container before building the app
 builder.Services.AddCors(options =>
 {
